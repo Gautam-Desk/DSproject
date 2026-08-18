@@ -1,30 +1,29 @@
 /**
  * VeritasAI - Frontend Client Logic
- * Handles interactive tabs, live TensorFlow predictions, token saliency rendering,
- * benchmark chart drawing, dataset inspection, and share modal with QR code.
+ * Handles interactive tabs, 1-click topic chips, clipboard paste,
+ * real-time predictions, natural language reasoning, token saliency, and charts.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // State
   let benchmarkData = null;
   let samplesList = [];
   let shareInfo = null;
 
-  // DOM Elements
+  // Navigation
   const navTabs = document.querySelectorAll('.nav-tab');
   const tabContents = document.querySelectorAll('.tab-content');
   
-  // Detector Elements
+  // Detector Inputs
   const newsForm = document.getElementById('news-form');
   const newsTitleInput = document.getElementById('news-title');
   const newsTextInput = document.getElementById('news-text');
   const bodyCharCount = document.getElementById('body-char-count');
-  const sampleSelect = document.getElementById('sample-select');
+  const presetChipsContainer = document.getElementById('preset-chips');
+  const btnPasteClipboard = document.getElementById('btn-paste-clipboard');
   const btnClear = document.getElementById('btn-clear');
   const latencyVal = document.getElementById('latency-val');
-  const activeModelName = document.getElementById('active-model-name');
 
-  // Result States
+  // Results State Containers
   const resultsEmptyState = document.getElementById('results-empty-state');
   const resultsLoadingState = document.getElementById('results-loading-state');
   const resultsActiveState = document.getElementById('results-active-state');
@@ -38,16 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const gaugeScore = document.getElementById('gauge-score');
   const gaugeLabel = document.getElementById('gauge-label');
 
-  // Metrics Grid
+  // Metrics Bars
   const barReal = document.getElementById('bar-real');
   const barFake = document.getElementById('bar-fake');
   const valReal = document.getElementById('val-real');
   const valFake = document.getElementById('val-fake');
   const valRisk = document.getElementById('val-risk');
-  const valRiskDesc = document.getElementById('val-risk-desc');
-  const valReadability = document.getElementById('val-readability');
 
-  // Saliency & Diagnostics
+  // Reasoning & Saliency
+  const reasoningBulletsList = document.getElementById('reasoning-bullets-list');
   const saliencyContainer = document.getElementById('saliency-container');
   const lingSensationalVal = document.getElementById('ling-sensational-val');
   const lingSensationalBar = document.getElementById('ling-sensational-bar');
@@ -59,13 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const lingPunctBar = document.getElementById('ling-punct-bar');
   const detectedTagsContainer = document.getElementById('detected-tags-container');
 
-  // Lab Elements
+  // Benchmark Lab
   const benchmarkCardsGrid = document.getElementById('benchmark-cards-grid');
   const cmModelSelect = document.getElementById('cm-model-select');
   const cmDisplayContainer = document.getElementById('cm-display-container');
   const rocCanvas = document.getElementById('roc-canvas');
 
-  // Batch Elements
+  // Batch Scanner
   const batchTextarea = document.getElementById('batch-textarea');
   const btnRunBatch = document.getElementById('btn-run-batch');
   const btnLoadBatchDemo = document.getElementById('btn-load-batch-demo');
@@ -77,11 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const batchSumFake = document.getElementById('batch-sum-fake');
   const batchSumLatency = document.getElementById('batch-sum-latency');
 
-  // Python Code Elements
+  // Python Code Copy
   const btnCopyCode = document.getElementById('btn-copy-code');
   const pythonCodeSnippet = document.getElementById('python-code-snippet');
 
-  // Share Modal Elements
+  // Share Modal
   const btnOpenShare = document.getElementById('btn-open-share');
   const shareModal = document.getElementById('share-modal');
   const btnCloseShare = document.getElementById('btn-close-share');
@@ -95,15 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
   navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const targetId = tab.getAttribute('data-target');
-      
       navTabs.forEach(t => t.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
 
       tab.classList.add('active');
       const targetContent = document.getElementById(targetId);
-      if (targetContent) {
-        targetContent.classList.add('active');
-      }
+      if (targetContent) targetContent.classList.add('active');
 
       if (targetId === 'tab-lab' && benchmarkData) {
         renderBenchmarkCards();
@@ -114,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================
-  // 2. Word Count & Form Clear
+  // 2. Word Count & Clipboard Action
   // ==========================================
   function updateWordCount() {
     const text = newsTextInput.value.trim();
@@ -124,10 +119,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
   newsTextInput.addEventListener('input', updateWordCount);
 
+  btnPasteClipboard.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        if (!newsTitleInput.value.trim()) {
+          const lines = text.split('\n');
+          newsTitleInput.value = lines[0].slice(0, 120);
+          newsTextInput.value = lines.slice(1).join('\n').trim() || lines[0];
+        } else {
+          newsTextInput.value = text;
+        }
+        updateWordCount();
+      }
+    } catch (err) {
+      alert('Could not read clipboard. Please paste directly with Ctrl+V.');
+    }
+  });
+
   btnClear.addEventListener('click', () => {
     newsTitleInput.value = '';
     newsTextInput.value = '';
-    sampleSelect.value = '';
     updateWordCount();
     resultsActiveState.classList.add('hidden');
     resultsLoadingState.classList.add('hidden');
@@ -135,37 +147,36 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================
-  // 3. Samples Loader
+  // 3. Preset Topic Chips
   // ==========================================
   async function loadSamples() {
     try {
       const res = await fetch('/api/samples');
       if (res.ok) {
         samplesList = await res.json();
+        presetChipsContainer.innerHTML = '';
+        
         samplesList.forEach((sample, idx) => {
-          const opt = document.createElement('option');
-          opt.value = idx;
-          opt.textContent = `[${sample.badge}] ${sample.title.slice(0, 50)}...`;
-          sampleSelect.appendChild(opt);
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          const isReal = sample.expected === 'REAL';
+          chip.className = `preset-chip ${isReal ? 'real-chip' : 'fake-chip'}`;
+          chip.textContent = `${isReal ? '✓' : '⚠'} ${sample.badge}`;
+          
+          chip.addEventListener('click', () => {
+            newsTitleInput.value = sample.title;
+            newsTextInput.value = sample.text;
+            updateWordCount();
+            runAnalysis();
+          });
+          
+          presetChipsContainer.appendChild(chip);
         });
       }
     } catch (err) {
       console.error('Failed to load samples:', err);
     }
   }
-
-  sampleSelect.addEventListener('change', (e) => {
-    const idx = e.target.value;
-    if (idx !== '') {
-      const s = samplesList[idx];
-      if (s) {
-        newsTitleInput.value = s.title;
-        newsTextInput.value = s.text;
-        updateWordCount();
-        runAnalysis();
-      }
-    }
-  });
 
   // ==========================================
   // 4. Live Prediction & Explainability
@@ -174,8 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = newsTitleInput.value.trim();
     const text = newsTextInput.value.trim();
 
-    if (!title || !text) {
-      alert('Please provide both headline and body text.');
+    if (!title && !text) {
+      alert('Please enter a headline or article text.');
       return;
     }
 
@@ -190,10 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ title, text })
       });
 
-      if (!res.ok) {
-        throw new Error('Inference request failed');
-      }
-
+      if (!res.ok) throw new Error('Inference request failed');
       const data = await res.json();
       renderPredictionResults(data);
     } catch (err) {
@@ -212,19 +220,19 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsLoadingState.classList.add('hidden');
     resultsActiveState.classList.remove('hidden');
 
-    // Update Status Bar
     latencyVal.textContent = `${data.inference_latency_ms} ms`;
-    activeModelName.textContent = data.model_architecture || 'BiLSTM with Attention';
 
     const isFake = data.is_fake;
-    const confidence = data.confidence;
     const realProb = data.real_probability;
     const fakeProb = data.fake_probability;
 
-    // Verdict Hero Card Styling
+    // Verdict Card Header
     verdictHeroCard.className = `verdict-hero card ${isFake ? 'state-fake' : 'state-real'}`;
     verdictBadge.className = `verdict-badge ${isFake ? 'fake' : 'real'}`;
     verdictBadge.textContent = isFake ? 'FLAGGED MISINFORMATION' : 'VERIFIED AUTHENTIC';
+
+    valRisk.className = `risk-tag ${data.risk_level.toLowerCase()}`;
+    valRisk.textContent = `${data.risk_level} RISK`;
 
     if (isFake) {
       verdictHeadline.textContent = 'High Misinformation & Deceptive Risk';
@@ -234,28 +242,32 @@ document.addEventListener('DOMContentLoaded', () => {
       verdictDesc.textContent = data.risk_description || 'High consistency with empirical reporting, institutional attribution, and verified facts.';
     }
 
-    // Circular Progress Gauge
+    // Circular Gauge
     const scoreVal = isFake ? fakeProb : realProb;
     const gaugeColor = isFake ? 'var(--fake-color)' : 'var(--real-color)';
     const angle = (scoreVal / 100) * 360;
     
     gaugeCircle.style.background = `conic-gradient(${gaugeColor} 0deg ${angle}deg, rgba(255,255,255,0.08) ${angle}deg 360deg)`;
     gaugeScore.textContent = `${scoreVal.toFixed(1)}%`;
+    gaugeScore.style.color = gaugeColor;
     gaugeLabel.textContent = isFake ? 'Fake Risk' : 'Authentic';
 
-    // Metrics Bars
+    // Metric Progress Bars
     barReal.style.width = `${realProb}%`;
     valReal.textContent = `${realProb.toFixed(1)}%`;
     barFake.style.width = `${fakeProb}%`;
     valFake.textContent = `${fakeProb.toFixed(1)}%`;
 
-    // Risk Assessment Tag
-    valRisk.className = `risk-tag ${data.risk_level.toLowerCase()}`;
-    valRisk.textContent = data.risk_level;
-    valRiskDesc.textContent = isFake ? 'Critical anomaly score' : 'Normal journalistic profile';
-
-    // Readability
-    valReadability.textContent = data.linguistics ? data.linguistics.reading_ease : '68.0';
+    // "Why This Verdict?" Natural Language Bullets
+    reasoningBulletsList.innerHTML = '';
+    if (data.linguistics && data.linguistics.reasoning_bullets) {
+      data.linguistics.reasoning_bullets.forEach(bullet => {
+        const li = document.createElement('li');
+        li.className = 'reasoning-item';
+        li.textContent = bullet;
+        reasoningBulletsList.appendChild(li);
+      });
+    }
 
     // Word-Level Saliency Highlighter
     renderSaliencyHighlights(data.saliency_tokens);
@@ -275,9 +287,8 @@ document.addEventListener('DOMContentLoaded', () => {
       lingPunctVal.textContent = `${ling.punctuation_anomaly_score}%`;
       lingPunctBar.style.width = `${ling.punctuation_anomaly_score}%`;
 
-      // Detected Keywords Tags
       detectedTagsContainer.innerHTML = '';
-      if (ling.detected_sensational_terms && ling.detected_sensational_terms.length > 0) {
+      if (ling.detected_sensational_terms) {
         ling.detected_sensational_terms.forEach(term => {
           const tag = document.createElement('span');
           tag.className = 'term-tag sensational';
@@ -285,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
           detectedTagsContainer.appendChild(tag);
         });
       }
-      if (ling.detected_credible_terms && ling.detected_credible_terms.length > 0) {
+      if (ling.detected_credible_terms) {
         ling.detected_credible_terms.forEach(term => {
           const tag = document.createElement('span');
           tag.className = 'term-tag credible';
@@ -348,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${isBest ? '<span class="best-badge">Best Performer</span>' : ''}
         <div class="model-header">
           <h4 class="model-name">${name}</h4>
-          <span class="model-sub">TensorFlow Deep Architecture</span>
+          <span class="model-sub">TensorFlow Deep Learning Architecture</span>
         </div>
         <div class="model-stats-row">
           <div class="m-stat">
@@ -389,7 +400,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="cm-grid-2x2">
         <div class="cm-cell tn">
           <span class="cm-count">${cm.true_negative}</span>
-          <span class="cm-label">True Negatives (Real News Correct)</span>
+          <span class="cm-label">True Negatives (Real Correct)</span>
         </div>
         <div class="cm-cell fp">
           <span class="cm-count">${cm.false_positive}</span>
@@ -401,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="cm-cell tp">
           <span class="cm-count">${cm.true_positive}</span>
-          <span class="cm-label">True Positives (Fake News Correct)</span>
+          <span class="cm-label">True Positives (Fake Correct)</span>
         </div>
       </div>
     `;
@@ -417,15 +428,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const width = rocCanvas.width;
     const height = rocCanvas.height;
 
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Padding & dimensions
     const pad = 35;
     const chartW = width - pad * 2;
     const chartH = height - pad * 2;
 
-    // Draw grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.lineWidth = 1;
 
@@ -443,7 +451,6 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.stroke();
     }
 
-    // Diagonal Random Baseline
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -452,15 +459,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Colors for models
     const colors = {
-      'BiLSTM with Attention': '#38bdf8',
-      'CNN-BiLSTM Hybrid': '#10b981',
-      'Self-Attention Transformer': '#f59e0b',
+      'Self-Attention Transformer': '#38bdf8',
+      'BiLSTM with Attention': '#10b981',
+      'CNN-BiLSTM Hybrid': '#f59e0b',
       'TF-IDF Baseline': '#a855f7'
     };
 
-    // Plot each model curve
     Object.entries(benchmarkData.models).forEach(([name, m]) => {
       if (!m.roc_curve || m.roc_curve.length === 0) return;
       ctx.strokeStyle = colors[name] || '#38bdf8';
@@ -476,16 +481,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.stroke();
     });
 
-    // Draw Labels
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '10px Inter, sans-serif';
+    ctx.font = '10px Plus Jakarta Sans, sans-serif';
     ctx.fillText('0.0 (FPR)', pad, height - 12);
     ctx.fillText('1.0', pad + chartW - 15, height - 12);
     ctx.fillText('1.0 (TPR)', 6, pad + 10);
   }
 
   // ==========================================
-  // 6. Dataset Explorer Counters
+  // 6. Dataset Explorer
   // ==========================================
   async function loadDatasetStats() {
     try {
@@ -493,11 +497,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res.ok) {
         const stats = await res.json();
         if (document.getElementById('stat-total')) {
-          document.getElementById('stat-total').textContent = stats.total_samples || '840';
-          document.getElementById('stat-train').textContent = stats.train_samples || '588';
-          document.getElementById('stat-val').textContent = stats.val_samples || '126';
-          document.getElementById('stat-test').textContent = stats.test_samples || '126';
-          document.getElementById('stat-avg-len').textContent = stats.avg_words_per_article ? stats.avg_words_per_article.toFixed(1) : '62.8';
+          document.getElementById('stat-total').textContent = stats.total_samples || '2,745';
+          document.getElementById('stat-train').textContent = stats.train_samples || '1,921';
+          document.getElementById('stat-val').textContent = stats.val_samples || '412';
+          document.getElementById('stat-test').textContent = stats.test_samples || '412';
+          document.getElementById('stat-vocab').textContent = stats.unique_vocabulary_tokens || '1,545';
+          document.getElementById('stat-avg-len').textContent = stats.avg_words_per_article ? stats.avg_words_per_article.toFixed(1) : '63.4';
         }
       }
     } catch (err) {
@@ -547,7 +552,6 @@ European Union Energy Report | Combined wind and solar installations generated m
       if (!res.ok) throw new Error('Batch request failed');
       const data = await res.json();
 
-      // Show summary banner
       batchSummaryCard.classList.remove('hidden');
       batchTableContainer.classList.remove('hidden');
 
@@ -556,7 +560,6 @@ European Union Energy Report | Combined wind and solar installations generated m
       batchSumFake.textContent = data.summary.fake_count;
       batchSumLatency.textContent = `${data.summary.batch_latency_ms} ms (${data.summary.avg_ms_per_article} ms/item)`;
 
-      // Populate Table
       batchTableBody.innerHTML = '';
       data.results.forEach((item, idx) => {
         const tr = document.createElement('tr');
@@ -623,7 +626,7 @@ European Union Energy Report | Combined wind and solar installations generated m
     });
   });
 
-  // Initialize Data
+  // Initialize
   loadSamples();
   loadBenchmarks();
   loadDatasetStats();

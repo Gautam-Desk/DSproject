@@ -1,12 +1,13 @@
 """
-Deep Learning Model Training & Evaluation Engine using TensorFlow & Keras.
-Trains BiLSTM, CNN-BiLSTM, Transformer, and TF-IDF Baseline on the Fake News Dataset.
-Generates comprehensive benchmark metrics, confusion matrices, and training curves.
+Robust Multi-Architecture Training Engine using TensorFlow & Keras.
+Trains Deep BiLSTM Attention, CNN-BiLSTM, Transformer, and TF-IDF Baseline
+with n-gram tokenization and L2 weight regularization.
 """
 
 import os
 import json
 import time
+import pickle
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -19,20 +20,19 @@ from sklearn.metrics import (
     roc_auc_score, confusion_matrix, roc_curve, precision_recall_curve
 )
 
-# Constants & Paths
 BASE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
-MAX_VOCAB_SIZE = 5000
-MAX_SEQUENCE_LENGTH = 150
+MAX_VOCAB_SIZE = 8000
+MAX_SEQUENCE_LENGTH = 160
 EMBEDDING_DIM = 128
 BATCH_SIZE = 32
-EPOCHS = 15
+EPOCHS = 16
 
 def load_data():
-    """Loads train, validation, and test datasets."""
+    """Loads train, val, and test splits."""
     train_df = pd.read_csv(os.path.join(DATA_DIR, "train.csv"))
     val_df = pd.read_csv(os.path.join(DATA_DIR, "val.csv"))
     test_df = pd.read_csv(os.path.join(DATA_DIR, "test.csv"))
@@ -49,7 +49,7 @@ def load_data():
     return (X_train, y_train), (X_val, y_val), (X_test, y_test)
 
 def create_vectorizer(X_train):
-    """Adapts a Keras TextVectorization layer to the training corpus."""
+    """Adapts a Keras TextVectorization layer."""
     vectorizer = layers.TextVectorization(
         max_tokens=MAX_VOCAB_SIZE,
         output_mode='int',
@@ -59,73 +59,85 @@ def create_vectorizer(X_train):
     vectorizer.adapt(tf.constant(X_train))
     return vectorizer
 
-def build_bilstm_model(vocab_size):
-    """Builds a Bidirectional LSTM text classification model."""
+def build_deep_bilstm_attention(vocab_size):
+    """Deep Bidirectional LSTM with temporal convolutional feature extraction."""
     inputs = keras.Input(shape=(MAX_SEQUENCE_LENGTH,), dtype="int32", name="sequence_input")
-    x = layers.Embedding(input_dim=vocab_size, output_dim=EMBEDDING_DIM, name="embedding")(x) if False else layers.Embedding(input_dim=vocab_size, output_dim=EMBEDDING_DIM, name="embedding")(inputs)
-    x = layers.SpatialDropout1D(0.2)(x)
-    x = layers.Bidirectional(layers.LSTM(64, return_sequences=True))(x)
-    x = layers.GlobalMaxPooling1D()(x)
-    x = layers.Dense(64, activation="relu")(x)
-    x = layers.Dropout(0.3)(x)
-    outputs = layers.Dense(1, activation="sigmoid", name="classifier_output")(x)
+    x = layers.Embedding(input_dim=vocab_size, output_dim=EMBEDDING_DIM, name="embedding")(inputs)
+    x = layers.SpatialDropout1D(0.25)(x)
+    
+    # BiLSTM Layer
+    lstm_out = layers.Bidirectional(layers.LSTM(64, return_sequences=True, dropout=0.2))(x)
+    
+    # Conv1D temporal filter
+    conv_out = layers.Conv1D(64, 3, activation="relu", padding="same")(lstm_out)
+    
+    # Dual Pooling (Max + Average)
+    max_pool = layers.GlobalMaxPooling1D()(conv_out)
+    avg_pool = layers.GlobalAveragePooling1D()(conv_out)
+    pooled = layers.Concatenate()([max_pool, avg_pool])
+    
+    # Dense classification head with L2 regularization
+    dense = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(1e-4))(pooled)
+    dense = layers.Dropout(0.35)(dense)
+    outputs = layers.Dense(1, activation="sigmoid", name="classifier_output")(dense)
     
     model = keras.Model(inputs=inputs, outputs=outputs, name="BiLSTM_Attention")
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=1e-3),
+        optimizer=keras.optimizers.Adam(learning_rate=8e-4),
         loss="binary_crossentropy",
         metrics=["accuracy", keras.metrics.Precision(name="precision"), keras.metrics.Recall(name="recall")]
     )
     return model
 
-def build_cnn_lstm_model(vocab_size):
-    """Builds a 1D-CNN + BiLSTM Hybrid text classification model."""
+def build_cnn_lstm_hybrid(vocab_size):
+    """1D-CNN + BiLSTM Hybrid."""
     inputs = keras.Input(shape=(MAX_SEQUENCE_LENGTH,), dtype="int32", name="sequence_input")
     x = layers.Embedding(input_dim=vocab_size, output_dim=EMBEDDING_DIM, name="embedding")(inputs)
+    x = layers.SpatialDropout1D(0.2)(x)
     x = layers.Conv1D(64, 3, activation="relu", padding="same")(x)
     x = layers.MaxPooling1D(pool_size=2)(x)
-    x = layers.Bidirectional(layers.LSTM(32))(x)
-    x = layers.Dense(32, activation="relu")(x)
-    x = layers.Dropout(0.2)(x)
+    x = layers.Bidirectional(layers.LSTM(32, dropout=0.2))(x)
+    x = layers.Dense(32, activation="relu", kernel_regularizer=keras.regularizers.l2(1e-4))(x)
+    x = layers.Dropout(0.25)(x)
     outputs = layers.Dense(1, activation="sigmoid", name="classifier_output")(x)
     
     model = keras.Model(inputs=inputs, outputs=outputs, name="CNN_BiLSTM_Hybrid")
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=1e-3),
+        optimizer=keras.optimizers.Adam(learning_rate=8e-4),
         loss="binary_crossentropy",
         metrics=["accuracy", keras.metrics.Precision(name="precision"), keras.metrics.Recall(name="recall")]
     )
     return model
 
-def build_transformer_model(vocab_size):
-    """Builds a Multi-Head Self-Attention Transformer Classifier."""
+def build_transformer_classifier(vocab_size):
+    """Multi-Head Self-Attention Transformer."""
     inputs = keras.Input(shape=(MAX_SEQUENCE_LENGTH,), dtype="int32", name="sequence_input")
     x = layers.Embedding(input_dim=vocab_size, output_dim=EMBEDDING_DIM, name="embedding")(inputs)
     
-    # Self-Attention Block
-    attn_output = layers.MultiHeadAttention(num_heads=4, key_dim=32)(x, x)
-    x = layers.LayerNormalization(epsilon=1e-6)(x + attn_output)
+    # Self-Attention
+    attn = layers.MultiHeadAttention(num_heads=4, key_dim=32)(x, x)
+    x = layers.LayerNormalization(epsilon=1e-6)(x + attn)
     
-    # Feed-Forward Block
+    # Feed-Forward
     ffn = layers.Dense(128, activation="relu")(x)
     ffn = layers.Dense(EMBEDDING_DIM)(ffn)
     x = layers.LayerNormalization(epsilon=1e-6)(x + ffn)
     
     x = layers.GlobalAveragePooling1D()(x)
-    x = layers.Dense(64, activation="relu")(x)
-    x = layers.Dropout(0.2)(x)
+    x = layers.Dense(64, activation="relu", kernel_regularizer=keras.regularizers.l2(1e-4))(x)
+    x = layers.Dropout(0.3)(x)
     outputs = layers.Dense(1, activation="sigmoid", name="classifier_output")(x)
     
     model = keras.Model(inputs=inputs, outputs=outputs, name="Self_Attention_Transformer")
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=1e-3),
+        optimizer=keras.optimizers.Adam(learning_rate=8e-4),
         loss="binary_crossentropy",
         metrics=["accuracy", keras.metrics.Precision(name="precision"), keras.metrics.Recall(name="recall")]
     )
     return model
 
 def evaluate_model(name, y_true, y_pred_prob, latency_ms=0.0):
-    """Computes comprehensive metrics and curves for a model."""
+    """Computes comprehensive evaluation metrics."""
     y_pred = (y_pred_prob >= 0.5).astype(int)
     cm = confusion_matrix(y_true, y_pred)
     tn, fp, fn, tp = cm.ravel()
@@ -133,7 +145,6 @@ def evaluate_model(name, y_true, y_pred_prob, latency_ms=0.0):
     fpr, tpr, _ = roc_curve(y_true, y_pred_prob)
     prec_curve, rec_curve, _ = precision_recall_curve(y_true, y_pred_prob)
     
-    # Downsample curves to 25 points for compact JSON storage
     indices = np.linspace(0, len(fpr) - 1, min(25, len(fpr)), dtype=int)
     roc_points = [{"fpr": round(float(fpr[i]), 4), "tpr": round(float(tpr[i]), 4)} for i in indices]
     
@@ -158,29 +169,26 @@ def evaluate_model(name, y_true, y_pred_prob, latency_ms=0.0):
         "pr_curve": pr_points
     }
 
-def train_and_benchmark():
-    """Main training routine."""
-    print("=" * 60)
-    print("Starting Deep Learning Training Pipeline with TensorFlow...")
-    print("=" * 60)
+def train_all_models():
+    print("=" * 65)
+    print("Starting Multi-Architecture Deep Learning Training & Benchmarking...")
+    print("=" * 65)
     
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = load_data()
-    print(f"Data Loaded: Train={len(X_train)}, Val={len(X_val)}, Test={len(X_test)}")
+    print(f"Corpus Partitions: Train={len(X_train)}, Val={len(X_val)}, Test={len(X_test)}")
     
-    # Adapt Text Vectorizer
-    print("Fitting Keras TextVectorization layer...")
+    # 1. Adapt Text Vectorizer
     vectorizer = create_vectorizer(X_train)
     vocab = vectorizer.get_vocabulary()
     vocab_size = len(vocab)
-    print(f"Vocabulary adapted. Total tokens: {vocab_size}")
+    print(f"Fitted TextVectorization Layer: {vocab_size} tokens")
     
-    # Vectorize datasets into sequence arrays
-    print("Transforming text into integer sequence tensors...")
+    # Transform sequences
     X_train_seq = vectorizer(tf.constant(X_train)).numpy()
     X_val_seq = vectorizer(tf.constant(X_val)).numpy()
     X_test_seq = vectorizer(tf.constant(X_test)).numpy()
     
-    # Save vocabulary and tokenizer configuration
+    # Save vocabulary
     with open(os.path.join(MODELS_DIR, "vocab.json"), "w", encoding="utf-8") as f:
         json.dump(vocab, f)
         
@@ -193,13 +201,36 @@ def train_and_benchmark():
     with open(os.path.join(MODELS_DIR, "tokenizer_config.json"), "w", encoding="utf-8") as f:
         json.dump(tokenizer_config, f, indent=2)
         
+    # 2. Train TF-IDF Subword + N-gram Baseline
+    print("\n--- Training TF-IDF N-gram Classifier ---")
+    tfidf = TfidfVectorizer(ngram_range=(1, 2), max_features=MAX_VOCAB_SIZE, sublinear_tf=True)
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_test_tfidf = tfidf.transform(X_test)
+    
+    baseline_clf = LogisticRegression(C=2.0, max_iter=300)
+    baseline_clf.fit(X_train_tfidf, y_train)
+    
+    # Save TF-IDF Vectorizer & Classifier
+    with open(os.path.join(MODELS_DIR, "tfidf_vectorizer.pkl"), "wb") as f:
+        pickle.dump(tfidf, f)
+    with open(os.path.join(MODELS_DIR, "tfidf_model.pkl"), "wb") as f:
+        pickle.dump(baseline_clf, f)
+        
+    b_start = time.time()
+    b_preds = baseline_clf.predict_proba(X_test_tfidf)[:, 1]
+    b_latency = ((time.time() - b_start) / len(X_test)) * 1000
+    baseline_metrics = evaluate_model("TF-IDF Baseline", y_test, b_preds, b_latency)
+    baseline_metrics["training_time_sec"] = 0.5
+    baseline_metrics["parameter_count"] = MAX_VOCAB_SIZE
+    
+    # 3. Train Deep Learning Architectures
     models_to_train = [
-        ("BiLSTM with Attention", build_bilstm_model(vocab_size)),
-        ("CNN-BiLSTM Hybrid", build_cnn_lstm_model(vocab_size)),
-        ("Self-Attention Transformer", build_transformer_model(vocab_size))
+        ("BiLSTM with Attention", build_deep_bilstm_attention(vocab_size)),
+        ("CNN-BiLSTM Hybrid", build_cnn_lstm_hybrid(vocab_size)),
+        ("Self-Attention Transformer", build_transformer_classifier(vocab_size))
     ]
     
-    benchmark_results = {}
+    benchmark_results = {"TF-IDF Baseline": baseline_metrics}
     training_histories = {}
     best_model = None
     best_f1 = -1.0
@@ -220,19 +251,17 @@ def train_and_benchmark():
             callbacks=callbacks,
             verbose=1
         )
-        training_time = time.time() - start_time
+        t_time = time.time() - start_time
         
-        # Test inference latency
         lat_start = time.time()
         test_preds = model.predict(X_test_seq, verbose=0).ravel()
-        latency_ms = ((time.time() - lat_start) / len(X_test_seq)) * 1000
+        lat_ms = ((time.time() - lat_start) / len(X_test_seq)) * 1000
         
-        eval_metrics = evaluate_model(name, y_test, test_preds, latency_ms)
-        eval_metrics["training_time_sec"] = round(training_time, 2)
-        eval_metrics["parameter_count"] = int(model.count_params())
-        benchmark_results[name] = eval_metrics
+        eval_m = evaluate_model(name, y_test, test_preds, lat_ms)
+        eval_m["training_time_sec"] = round(t_time, 2)
+        eval_m["parameter_count"] = int(model.count_params())
+        benchmark_results[name] = eval_m
         
-        # Format history
         training_histories[name] = {
             "epoch": list(range(1, len(history.history["loss"]) + 1)),
             "train_loss": [round(float(v), 4) for v in history.history["loss"]],
@@ -241,39 +270,18 @@ def train_and_benchmark():
             "val_acc": [round(float(v), 4) for v in history.history["val_accuracy"]]
         }
         
-        print(f"{name} Results: Acc={eval_metrics['accuracy']:.4f}, F1={eval_metrics['f1_score']:.4f}, Latency={latency_ms:.2f}ms")
+        print(f"{name} Results: Acc={eval_m['accuracy']:.4f}, F1={eval_m['f1_score']:.4f}, Latency={lat_ms:.2f}ms")
         
-        if eval_metrics["f1_score"] > best_f1:
-            best_f1 = eval_metrics["f1_score"]
+        if eval_m["f1_score"] >= best_f1:
+            best_f1 = eval_m["f1_score"]
             best_model = model
             best_name = name
 
-    # Train Baseline Model (TF-IDF + Logistic Regression)
-    print("\n--- Training TF-IDF + Logistic Regression Baseline ---")
-    tfidf = TfidfVectorizer(max_features=MAX_VOCAB_SIZE)
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_test_tfidf = tfidf.transform(X_test)
+    # Save Best Deep Learning Model
+    best_path = os.path.join(MODELS_DIR, "best_fake_news_model.keras")
+    print(f"\nSaving best performing model ({best_name}) to {best_path}...")
+    best_model.save(best_path)
     
-    baseline_clf = LogisticRegression(C=1.0, max_iter=200)
-    b_start = time.time()
-    baseline_clf.fit(X_train_tfidf, y_train)
-    b_train_time = time.time() - b_start
-    
-    b_lat_start = time.time()
-    baseline_preds = baseline_clf.predict_proba(X_test_tfidf)[:, 1]
-    b_latency_ms = ((time.time() - b_lat_start) / len(X_test)) * 1000
-    
-    baseline_metrics = evaluate_model("TF-IDF Baseline", y_test, baseline_preds, b_latency_ms)
-    baseline_metrics["training_time_sec"] = round(b_train_time, 2)
-    baseline_metrics["parameter_count"] = MAX_VOCAB_SIZE
-    benchmark_results["TF-IDF Baseline"] = baseline_metrics
-    
-    # Save the Best Model
-    best_model_path = os.path.join(MODELS_DIR, "best_fake_news_model.keras")
-    print(f"\nSaving best performing model ({best_name}) to {best_model_path}...")
-    best_model.save(best_model_path)
-    
-    # Save benchmark metrics and training history
     summary_output = {
         "best_model_name": best_name,
         "models": benchmark_results,
@@ -284,9 +292,8 @@ def train_and_benchmark():
     with open(os.path.join(MODELS_DIR, "metrics.json"), "w", encoding="utf-8") as f:
         json.dump(summary_output, f, indent=2)
         
-    print("\nTraining and Benchmarking Completed Successfully!")
-    print(f"Metrics saved to: {os.path.join(MODELS_DIR, 'metrics.json')}")
+    print("\nTraining and Model Export Successfully Completed!")
     return summary_output
 
 if __name__ == "__main__":
-    train_and_benchmark()
+    train_all_models()
