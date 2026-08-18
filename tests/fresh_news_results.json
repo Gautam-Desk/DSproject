@@ -1,0 +1,168 @@
+{
+  "accuracy_percentage": 100.0,
+  "total_tested": 10,
+  "passed": 10,
+  "timestamp": "2026-08-18 22:49:23",
+  "results": [
+    {
+      "id": "REAL-01",
+      "category": "Climate & Space Science",
+      "ground_truth": "REAL",
+      "predicted": "REAL",
+      "is_correct": true,
+      "real_prob": 100.0,
+      "fake_prob": 0.0,
+      "confidence": 100.0,
+      "risk_level": "MINIMAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "NOAA and NASA Report 2025 Global Ocean Surface Temperatures Reached Record High in Multi-Satellite Analysis",
+      "latency": 66.2
+    },
+    {
+      "id": "REAL-02",
+      "category": "Macroeconomics & Banking",
+      "ground_truth": "REAL",
+      "predicted": "REAL",
+      "is_correct": true,
+      "real_prob": 100.0,
+      "fake_prob": 0.0,
+      "confidence": 100.0,
+      "risk_level": "MINIMAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "Bank of England Lowers Key Benchmark Rate to 4.75 Percent Following Drop in Services Inflation",
+      "latency": 74.4
+    },
+    {
+      "id": "REAL-03",
+      "category": "Biomedical & Oncology",
+      "ground_truth": "REAL",
+      "predicted": "REAL",
+      "is_correct": true,
+      "real_prob": 100.0,
+      "fake_prob": 0.0,
+      "confidence": 100.0,
+      "risk_level": "MINIMAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "New England Journal of Medicine Study Confirms mRNA Melanoma Vaccine Reduced Recurrence by 44 Percent",
+      "latency": 62.6
+    },
+    {
+      "id": "REAL-04",
+      "category": "Semiconductors & AI",
+      "ground_truth": "REAL",
+      "predicted": "REAL",
+      "is_correct": true,
+      "real_prob": 100.0,
+      "fake_prob": 0.0,
+      "confidence": 100.0,
+      "risk_level": "MINIMAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "NVIDIA Announces Next-Generation Blackwell Ultra Architecture with 3nm Process and 288GB HBM3e Memory",
+      "latency": 63.3
+    },
+    {
+      "id": "REAL-05",
+      "category": "International Law & Treaties",
+      "ground_truth": "REAL",
+      "predicted": "REAL",
+      "is_correct": true,
+      "real_prob": 100.0,
+      "fake_prob": 0.0,
+      "confidence": 100.0,
+      "risk_level": "MINIMAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "International Court of Justice Delivers Binding Advisory Opinion on State Maritime Climate Obligations",
+      "latency": 61.7
+    },
+    {
+      "id": "FAKE-01",
+      "category": "Health Pseudo-Cure Hoax",
+      "ground_truth": "FAKE",
+      "predicted": "FAKE",
+      "is_correct": true,
+      "real_prob": 0.0,
+      "fake_prob": 100.0,
+      "confidence": 100.0,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "SHOCKING TRUTH: Drinking Raw Onion Juice with Crushed Aspirin Instantly Dissolves All Arterial Plaque Overnight!",
+      "latency": 63.6
+    },
+    {
+      "id": "FAKE-02",
+      "category": "5G & Thought-Control Conspiracy",
+      "ground_truth": "FAKE",
+      "predicted": "FAKE",
+      "is_correct": true,
+      "real_prob": 0.01,
+      "fake_prob": 99.99,
+      "confidence": 100.0,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "WHISTLEBLOWER BOMBSHELL: New Smart Electric Meters Emit High-Frequency Microwave Pulses to Read Your Private Thoughts!",
+      "latency": 61.4
+    },
+    {
+      "id": "FAKE-03",
+      "category": "Space / Flat Earth Hoax",
+      "ground_truth": "FAKE",
+      "predicted": "FAKE",
+      "is_correct": true,
+      "real_prob": 0.0,
+      "fake_prob": 100.0,
+      "confidence": 100.0,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "LEAKED NASA MEMO: Space Agency Accidentally Admits Earth Is Enclosed in a Giant Impenetrable Glass Dome!",
+      "latency": 65.5
+    },
+    {
+      "id": "FAKE-04",
+      "category": "Financial Panic & Banking Scam",
+      "ground_truth": "FAKE",
+      "predicted": "FAKE",
+      "is_correct": true,
+      "real_prob": 0.0,
+      "fake_prob": 100.0,
+      "confidence": 100.0,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "URGENT ALERT: Central Bankers Are Secretly Freezing All Private Savings Accounts Starting Friday at Midnight!",
+      "latency": 60.1
+    },
+    {
+      "id": "FAKE-05",
+      "category": "Celebrity & Alien Deepfake Hoax",
+      "ground_truth": "FAKE",
+      "predicted": "FAKE",
+      "is_correct": true,
+      "real_prob": 0.0,
+      "fake_prob": 100.0,
+      "confidence": 100.0,
+      "risk_level": "CRITICAL",
+      "reasons": [
+        "Standard analysis."
+      ],
+      "title": "BOMBSHELL VIDEO: Top Hollywood Actor Flees Country After Exposing Secret Underground Alien Cloning Facility in Nevada!",
+      "latency": 64.9
+    }
+  ]
+}
