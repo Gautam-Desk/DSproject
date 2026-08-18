@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VeritasAI - Deep Learning Fake News Detection Engine</title>
+  <meta name="description" content="AI-powered fake news and misinformation detection platform using TensorFlow deep learning, BiLSTM attention networks, and token saliency explainability.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Veritas<span class="brand-accent">AI</span></span>
+          <span class="brand-tagline">TensorFlow Deep Learning Detector</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" data-target="tab-detector" role="tab" id="tab-btn-detector">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M4 8V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+          Detector Studio
+        </button>
+        <button class="nav-tab" data-target="tab-lab" role="tab" id="tab-btn-lab">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          Model Benchmark Lab
+        </button>
+        <button class="nav-tab" data-target="tab-dataset" role="tab" id="tab-btn-dataset">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+          Dataset & Pipeline
+        </button>
+        <button class="nav-tab" data-target="tab-batch" role="tab" id="tab-btn-batch">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+          Batch Scanner
+        </button>
+        <button class="nav-tab" data-target="tab-api" role="tab" id="tab-btn-api">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          Python SDK
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <button class="btn-share" id="btn-open-share" title="Share with team & mobile devices">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Share App</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main">
+
+    <!-- ==================== TAB 1: DETECTOR STUDIO ==================== -->
+    <section class="tab-content active" id="tab-detector">
+      <div class="detector-layout">
+        
+        <!-- Input & Controls Column -->
+        <div class="input-panel card">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Article Verification Studio</h2>
+              <p class="panel-desc">Paste article headline and text to evaluate authenticity and examine token attribution.</p>
+            </div>
+            <div class="sample-picker-container">
+              <label for="sample-select" class="sample-label">Quick Samples:</label>
+              <select id="sample-select" class="select-control">
+                <option value="">-- Load Benchmark Sample --</option>
+              </select>
+            </div>
+          </div>
+
+          <form id="news-form" class="news-form">
+            <div class="form-group">
+              <label for="news-title" class="input-label">Headline / News Title</label>
+              <input type="text" id="news-title" class="text-input" placeholder="e.g. NASA James Webb Telescope Discovers Ancient Galaxy..." required autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <div class="label-row">
+                <label for="news-text" class="input-label">Article Body Content</label>
+                <span class="char-count" id="body-char-count">0 words</span>
+              </div>
+              <textarea id="news-text" class="textarea-input" rows="7" placeholder="Paste full article text, press release, or social media news snippet here..." required></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btn-clear">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                Clear
+              </button>
+              <button type="submit" class="btn btn-primary" id="btn-analyze">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Analyze Authenticity</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Status Bar -->
+          <div class="detector-status-bar">
+            <div class="status-item">
+              <span class="status-dot online"></span>
+              <span>Model: <strong id="active-model-name">BiLSTM with Attention</strong></span>
+            </div>
+            <div class="status-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>Inference Time: <strong id="latency-val">-- ms</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result & Analysis Column -->
+        <div class="results-panel">
+          
+          <!-- Empty State -->
+          <div class="empty-state-card card" id="results-empty-state">
+            <div class="empty-state-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <h3>Ready for Analysis</h3>
+            <p>Enter headline and body text, or choose a pre-loaded sample above to trigger deep learning classification.</p>
+          </div>
+
+          <!-- Loading State -->
+          <div class="loading-card card hidden" id="results-loading-state">
+            <div class="spinner"></div>
+            <h3>Evaluating Neural Activations...</h3>
+            <p>Running sequence vectorization, bidirectional LSTM embeddings, and linguistic feature extraction.</p>
+          </div>
+
+          <!-- Active Results Card -->
+          <div class="verdict-container hidden" id="results-active-state">
+            
+            <!-- Verdict Hero Header -->
+            <div class="verdict-hero card" id="verdict-hero-card">
+              <div class="verdict-main-info">
+                <span class="verdict-badge" id="verdict-badge">REAL NEWS</span>
+                <h3 class="verdict-headline" id="verdict-headline">Empirical & Fact-Aligned Content</h3>
+                <p class="verdict-desc" id="verdict-desc">The neural model identified strong institutional and factual vocabulary markers with minimal sensationalism indicators.</p>
+              </div>
+
+              <!-- Radial Probability Gauge -->
+              <div class="gauge-wrapper">
+                <div class="gauge-circle" id="gauge-circle">
+                  <div class="gauge-inner">
+                    <span class="gauge-score" id="gauge-score">99.2%</span>
+                    <span class="gauge-label" id="gauge-label">Authentic</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Risk & Probability Breakdown -->
+            <div class="metrics-grid">
+              <div class="metric-card card">
+                <span class="metric-title">Authenticity Probability</span>
+                <div class="metric-bar-container">
+                  <div class="metric-bar real" id="bar-real" style="width: 90%;"></div>
+                </div>
+                <span class="metric-num" id="val-real">90.0%</span>
+              </div>
+
+              <div class="metric-card card">
+                <span class="metric-title">Misinformation Probability</span>
+                <div class="metric-bar-container">
+                  <div class="metric-bar fake" id="bar-fake" style="width: 10%;"></div>
+                </div>
+                <span class="metric-num" id="val-fake">10.0%</span>
+              </div>
+
+              <div class="metric-card card">
+                <span class="metric-title">Risk Assessment</span>
+                <span class="risk-tag" id="val-risk">MINIMAL</span>
+                <span class="metric-sub" id="val-risk-desc">Low anomaly footprint</span>
+              </div>
+
+              <div class="metric-card card">
+                <span class="metric-title">Reading Ease Index</span>
+                <span class="metric-num" id="val-readability">64.5</span>
+                <span class="metric-sub">Standard Journalistic</span>
+              </div>
+            </div>
+
+            <!-- Token Saliency Highlighter Section -->
+            <div class="saliency-card card">
+              <div class="saliency-header">
+                <div>
+                  <h4 class="saliency-title">Word-Level Saliency & Contribution Map</h4>
+                  <p class="saliency-desc">Hover over highlighted terms to see how specific words impacted the neural prediction.</p>
+                </div>
+                <div class="saliency-legend">
+                  <span class="legend-item"><span class="legend-box strong-fake"></span> Fake Indicator</span>
+                  <span class="legend-item"><span class="legend-box strong-real"></span> Real Indicator</span>
+                </div>
+              </div>
+
+              <div class="saliency-text-box" id="saliency-container">
+                <!-- Saliency spans will be dynamically injected here -->
+              </div>
+            </div>
+
+            <!-- Linguistic Diagnostics Breakdown -->
+            <div class="linguistics-card card">
+              <h4 class="section-subtitle">Linguistic & Stylistic Diagnostics</h4>
+              <div class="linguistics-grid">
+                
+                <div class="ling-item">
+                  <div class="ling-row">
+                    <span class="ling-name">Sensationalism & Clickbait Index</span>
+                    <span class="ling-val" id="ling-sensational-val">12%</span>
+                  </div>
+                  <div class="ling-track"><div class="ling-fill warn" id="ling-sensational-bar" style="width: 12%;"></div></div>
+                </div>
+
+                <div class="ling-item">
+                  <div class="ling-row">
+                    <span class="ling-name">Institutional & Empirical Markers</span>
+                    <span class="ling-val" id="ling-credible-val">84%</span>
+                  </div>
+                  <div class="ling-track"><div class="ling-fill success" id="ling-credible-bar" style="width: 84%;"></div></div>
+                </div>
+
+                <div class="ling-item">
+                  <div class="ling-row">
+                    <span class="ling-name">Capitalization Anomaly Ratio</span>
+                    <span class="ling-val" id="ling-cap-val">0%</span>
+                  </div>
+                  <div class="ling-track"><div class="ling-fill warn" id="ling-cap-bar" style="width: 0%;"></div></div>
+                </div>
+
+                <div class="ling-item">
+                  <div class="ling-row">
+                    <span class="ling-name">Punctuation & Exclamation Density</span>
+                    <span class="ling-val" id="ling-punct-val">0%</span>
+                  </div>
+                  <div class="ling-track"><div class="ling-fill warn" id="ling-punct-bar" style="width: 0%;"></div></div>
+                </div>
+
+              </div>
+
+              <div class="detected-tags-row" id="detected-tags-container">
+                <!-- Dynamic tags -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: MODEL BENCHMARK LAB ==================== -->
+    <section class="tab-content" id="tab-lab">
+      <div class="lab-container">
+        
+        <div class="section-intro">
+          <h2 class="page-title">Neural Architecture Benchmark Lab</h2>
+          <p class="page-desc">Comparative evaluation of Deep Learning architectures trained on the benchmark news corpus.</p>
+        </div>
+
+        <!-- Model Comparison Cards Grid -->
+        <div class="models-grid" id="benchmark-cards-grid">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Detailed Metrics & Curves Section -->
+        <div class="benchmark-charts-grid">
+          
+          <!-- Confusion Matrix Heatmap Card -->
+          <div class="card chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Confusion Matrix Heatmap</h3>
+              <select id="cm-model-select" class="select-control compact">
+                <option value="BiLSTM with Attention">BiLSTM with Attention</option>
+                <option value="CNN-BiLSTM Hybrid">CNN-BiLSTM Hybrid</option>
+                <option value="Self-Attention Transformer">Self-Attention Transformer</option>
+                <option value="TF-IDF Baseline">TF-IDF Baseline</option>
+              </select>
+            </div>
+            
+            <div class="cm-display" id="cm-display-container">
+              <!-- Dynamically rendered confusion matrix -->
+            </div>
+          </div>
+
+          <!-- ROC Curve Canvas -->
+          <div class="card chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Receiver Operating Characteristic (ROC-AUC)</h3>
+              <span class="chart-tag">Test Dataset Evaluation</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="roc-canvas" width="450" height="260"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Model Architecture Deep Dive -->
+        <div class="card arch-deep-dive">
+          <h3 class="chart-title">Architecture Pipeline Breakdown</h3>
+          <div class="arch-flow">
+            <div class="arch-step">
+              <div class="step-badge">01</div>
+              <h4>Text Vectorization</h4>
+              <p>Standardizes text, tokenizes, and maps words into integer sequences up to 150 tokens.</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+              <div class="step-badge">02</div>
+              <h4>Word Embedding</h4>
+              <p>Dense 128-dimensional continuous vector space with SpatialDropout regularization.</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+              <div class="step-badge">03</div>
+              <h4>Bidirectional LSTM</h4>
+              <p>64-cell forward & backward recurrent units capturing long-range contextual semantic dependencies.</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+              <div class="step-badge">04</div>
+              <h4>Global Max Pooling</h4>
+              <p>Extracts dominant temporal features across full sequence length.</p>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-step">
+              <div class="step-badge">05</div>
+              <h4>Dense Classifier</h4>
+              <p>Fully connected layer with ReLU activation, 30% dropout, and Sigmoid probability output.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: DATASET & PIPELINE ==================== -->
+    <section class="tab-content" id="tab-dataset">
+      <div class="dataset-container">
+        
+        <div class="section-intro">
+          <h2 class="page-title">Dataset Distribution & NLP Pipeline</h2>
+          <p class="page-desc">Explore the balanced real vs fake news dataset, vocabulary distributions, and stratified splits.</p>
+        </div>
+
+        <!-- Dataset Key Stats Grid -->
+        <div class="dataset-stats-grid">
+          <div class="card stat-box">
+            <span class="stat-label">Total Corpus Articles</span>
+            <span class="stat-value" id="stat-total">840</span>
+            <span class="stat-footnote">Balanced 50/50 Real vs Fake</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Training Set (70%)</span>
+            <span class="stat-value" id="stat-train">588</span>
+            <span class="stat-footnote">Stratified Partition</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Validation Set (15%)</span>
+            <span class="stat-value" id="stat-val">126</span>
+            <span class="stat-footnote">Early Stopping Check</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Test Set (15%)</span>
+            <span class="stat-value" id="stat-test">126</span>
+            <span class="stat-footnote">Unseen Generalization</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Vocabulary Size</span>
+            <span class="stat-value" id="stat-vocab">1,340</span>
+            <span class="stat-footnote">Distinct Validated Tokens</span>
+          </div>
+          <div class="card stat-box">
+            <span class="stat-label">Avg Words / Article</span>
+            <span class="stat-value" id="stat-avg-len">62.8</span>
+            <span class="stat-footnote">Headline + Body Length</span>
+          </div>
+        </div>
+
+        <!-- Domain Categories Table -->
+        <div class="card categories-card">
+          <h3 class="chart-title">Topic & Domain Coverage</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Domain Category</th>
+                  <th>Real News Sample Focus</th>
+                  <th>Fake News Hoax Pattern</th>
+                  <th>Primary Linguistic Signature</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Science & Astronomy</strong></td>
+                  <td>James Webb Telescope, Deep Ocean Discoveries, Redshift Spectroscopy</td>
+                  <td>Ancient Alien Bases, Flat Earth Secrets, Soundstage Moon Landings</td>
+                  <td>Empirical research metrics vs dramatic suppression claims</td>
+                </tr>
+                <tr>
+                  <td><strong>Medicine & Healthcare</strong></td>
+                  <td>Clinical Trials, Malaria Vaccines, WHO Respiratory Guidelines</td>
+                  <td>Miracle Kitchen Cures, Turmeric Cancer Hoaxes, Banned Treatments</td>
+                  <td>Peer-reviewed data vs urgent sensational claims ("Doctors Banned!")</td>
+                </tr>
+                <tr>
+                  <td><strong>Finance & Economics</strong></td>
+                  <td>Federal Reserve Rates, Inflation Metrics, Digital Euro Standards</td>
+                  <td>Solar Flare Bank Reset, Microchip Tap Water Currency Lock</td>
+                  <td>Monetary data analysis vs panic-inducing financial collapse rumors</td>
+                </tr>
+                <tr>
+                  <td><strong>Technology & AI</strong></td>
+                  <td>IoT Open Protocols, Semiconductor Fabrication, AI Safety Bills</td>
+                  <td>5G Mind Control Towers, Sentient UN Coup, Quantum Spying</td>
+                  <td>Technical specifications vs conspiratorial mind-control narratives</td>
+                </tr>
+                <tr>
+                  <td><strong>Environment & Energy</strong></td>
+                  <td>Renewable Energy Milestones, Battery Recycling, Green Hydrogen Fleet</td>
+                  <td>Free Energy Perpetual Generators, Weather Control Hurricane Machine</td>
+                  <td>Measurable output statistics vs secret suppressed inventions</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: BATCH SCANNER ==================== -->
+    <section class="tab-content" id="tab-batch">
+      <div class="batch-container">
+        
+        <div class="section-intro">
+          <h2 class="page-title">Batch News Verification Scanner</h2>
+          <p class="page-desc">Simultaneously verify multiple headlines or news snippets with vectorized parallel inference.</p>
+        </div>
+
+        <div class="card batch-input-card">
+          <div class="batch-header">
+            <label for="batch-textarea" class="input-label">Enter Articles (One per line format: Headline | Article Body)</label>
+            <button class="btn btn-secondary compact" id="btn-load-batch-demo">Load 5 Demo Articles</button>
+          </div>
+          <textarea id="batch-textarea" class="textarea-input" rows="6" placeholder="Example:
+NASA Telescope Discovers Galaxy | Astronomers have verified ancient star clusters using spectroscopy.
+SHOCKING BOMBSHELL | Secret 5G mind control frequencies have been activated across all cities!"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="btn-run-batch">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Scan All Articles
+            </button>
+          </div>
+        </div>
+
+        <!-- Batch Summary Banner -->
+        <div class="batch-summary-banner hidden card" id="batch-summary-card">
+          <div class="summary-stat">
+            <span class="stat-label">Total Analyzed</span>
+            <span class="stat-value" id="batch-sum-total">0</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Verified Real</span>
+            <span class="stat-value real-text" id="batch-sum-real">0</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Flagged Misinformation</span>
+            <span class="stat-value fake-text" id="batch-sum-fake">0</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Total Scan Latency</span>
+            <span class="stat-value" id="batch-sum-latency">0 ms</span>
+          </div>
+        </div>
+
+        <!-- Batch Results Table -->
+        <div class="card batch-table-card hidden" id="batch-table-container">
+          <div class="table-responsive">
+            <table class="data-table" id="batch-results-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Headline / Text Snippet</th>
+                  <th>Verdict</th>
+                  <th>Authenticity</th>
+                  <th>Fake Risk</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="batch-table-body">
+                <!-- Rows injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: PYTHON SDK & CODE ==================== -->
+    <section class="tab-content" id="tab-api">
+      <div class="api-container">
+        
+        <div class="section-intro">
+          <h2 class="page-title">Python Integration & TensorFlow Inference Guide</h2>
+          <p class="page-desc">Easily integrate the trained TensorFlow model into your Python data science pipelines and notebooks.</p>
+        </div>
+
+        <!-- Code Snippet Card -->
+        <div class="card code-card">
+          <div class="code-header">
+            <span class="code-title">Python Inference Snippet (Standalone)</span>
+            <button class="btn btn-secondary compact" id="btn-copy-code">Copy Python Code</button>
+          </div>
+          <pre class="code-block"><code id="python-code-snippet">import json
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+
+# 1. Load Vocabulary and Initialize Vectorizer
+with open("models/vocab.json", "r", encoding="utf-8") as f:
+    vocab = json.load(f)
+
+vectorizer = keras.layers.TextVectorization(
+    max_tokens=5000,
+    output_mode='int',
+    output_sequence_length=150,
+    standardize='lower_and_strip_punctuation',
+    vocabulary=vocab
+)
+
+# 2. Load Trained Keras Model
+model = keras.models.load_model("models/best_fake_news_model.keras")
+
+# 3. Predict News Authenticity
+def predict_news(headline: str, body: str):
+    full_text = f"{headline} - {body}"
+    seq = vectorizer(tf.constant([full_text])).numpy()
+    fake_prob = float(model.predict(seq, verbose=0)[0][0])
+    
+    return {
+        "verdict": "FAKE" if fake_prob >= 0.5 else "REAL",
+        "fake_probability": round(fake_prob * 100, 2),
+        "real_probability": round((1.0 - fake_prob) * 100, 2)
+    }
+
+# Example Usage
+sample_headline = "NASA James Webb Space Telescope Discovers Ancient Galaxy"
+sample_body = "Astronomers observed luminous star formations 350M years after Big Bang."
+
+result = predict_news(sample_headline, sample_body)
+print("Classification Result:", result)
+</code></pre>
+        </div>
+
+        <!-- REST API Guide -->
+        <div class="card api-docs-card">
+          <h3 class="chart-title">REST API Endpoints</h3>
+          <div class="api-endpoint-list">
+            
+            <div class="endpoint-item">
+              <div class="endpoint-header">
+                <span class="http-badge post">POST</span>
+                <code>/api/predict</code>
+              </div>
+              <p>Evaluates news headline and body text, returning probability, risk level, word saliency attributions, and linguistic metrics.</p>
+            </div>
+
+            <div class="endpoint-item">
+              <div class="endpoint-header">
+                <span class="http-badge post">POST</span>
+                <code>/api/batch-predict</code>
+              </div>
+              <p>Performs vectorized parallel classification across multiple news articles.</p>
+            </div>
+
+            <div class="endpoint-item">
+              <div class="endpoint-header">
+                <span class="http-badge get">GET</span>
+                <code>/api/benchmark</code>
+              </div>
+              <p>Retrieves model benchmark metrics (Accuracy, F1-Score, Confusion Matrices, ROC curves).</p>
+            </div>
+
+            <div class="endpoint-item">
+              <div class="endpoint-header">
+                <span class="http-badge get">GET</span>
+                <code>/api/share-info</code>
+              </div>
+              <p>Generates shareable local network link and base64 QR code for LAN/mobile testing.</p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Share & QR Modal Dialog -->
+  <dialog class="share-modal" id="share-modal">
+    <div class="modal-card card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="brand-icon small">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </div>
+          <h3>Share Live VeritasAI App</h3>
+        </div>
+        <button class="btn-close-modal" id="btn-close-share" aria-label="Close modal">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-desc">Anyone on your Wi-Fi / Local Network can access this live TensorFlow application by scanning the QR code or visiting the URL below.</p>
+        
+        <div class="qr-container">
+          <img id="modal-qr-img" src="" alt="Scan QR Code to Open on Mobile" class="qr-image">
+          <span class="qr-caption">Scan with phone camera to test live on mobile</span>
+        </div>
+
+        <div class="share-url-box">
+          <input type="text" id="share-network-url" readonly class="share-input" value="http://localhost:8000">
+          <button class="btn btn-primary compact" id="btn-copy-url">Copy Link</button>
+        </div>
+
+        <div class="tunnel-tips">
+          <span class="tip-title">Public Sharing (Anywhere in the World):</span>
+          <p>To share with people outside your local Wi-Fi, run:</p>
+          <code>npx localtunnel --port 8000</code>
+          <p class="tip-sub">or use <code>ngrok http 8000</code></p>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Scripts -->
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

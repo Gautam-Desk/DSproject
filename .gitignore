@@ -1,0 +1,42 @@
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+*.py[cod]
+*$py.class
+__pycache__/
+
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+token.json
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Model checkpoints & large temporary cache
+checkpoints/
+*.tmp
+*.log
+.system_generated/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
