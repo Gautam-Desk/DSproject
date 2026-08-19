@@ -156,7 +156,89 @@ REAL_NEWS_TEMPLATES = [
         "title": "Pacific Rim Nations Finalize Enhanced Maritime Search-and-Rescue Communication Protocols",
         "text": "Coast guard representatives from twelve nations signed a multilateral maritime safety agreement in Tokyo establishing dedicated ultra-high-frequency radio frequencies and satellite data sharing to coordinate responses to maritime distress calls.",
         "category": "World"
-    }
+    },
+    # Sports & Entertainment
+    {
+        "title": "Olympic Committee Confirms Paris 2024 Athlete Participation Record with 206 National Delegations",
+        "text": "The International Olympic Committee confirmed that the Paris 2024 Summer Games attracted the highest number of national delegations in Olympic history, with 206 participating nations and approximately 10,700 registered athletes across 32 sports disciplines. Accreditation and anti-doping testing were administered by the World Anti-Doping Agency.",
+        "category": "Sports"
+    },
+    {
+        "title": "Premier League Club Announces Record Transfer Agreement Subject to Medical and Regulatory Approval",
+        "text": "A top-flight English Premier League football club has confirmed a record domestic transfer agreement pending completion of mandatory medical assessments and approval from the Football Association transfer compliance committee. The player's agent confirmed the move via official club communication channels.",
+        "category": "Sports"
+    },
+    # International News
+    {
+        "title": "G7 Finance Ministers Reach Consensus on Global Minimum Corporate Tax Implementation Framework",
+        "text": "Finance ministers representing the seven largest advanced economies announced a unified framework for implementing the OECD-led global minimum corporate tax rate of 15 percent across member jurisdictions. Officials confirmed that multilateral administrative guidelines will be released following parliamentary ratification processes in each nation.",
+        "category": "World"
+    },
+    {
+        "title": "United Nations Security Council Passes Resolution Establishing International Peacekeeping Mission",
+        "text": "The United Nations Security Council adopted resolution 2789 by a vote of 12 to 0 with three abstentions, authorizing deployment of a 5,000-person multilateral peacekeeping force to monitor ceasefire compliance and support civilian protection in the affected region.",
+        "category": "World"
+    },
+    {
+        "title": "World Trade Organization Rules in Favour of Complainant in Agricultural Subsidy Dispute",
+        "text": "A WTO dispute settlement panel issued its final ruling determining that contested agricultural export subsidies violate provisions of the Agreement on Agriculture, recommending withdrawal of measures inconsistent with multilateral trade obligations within a reasonable transition period.",
+        "category": "World"
+    },
+    # Science new templates
+    {
+        "title": "Stanford Researchers Develop Biodegradable Polymer That Breaks Down in Ocean Water Within 30 Days",
+        "text": "Materials scientists at Stanford University have synthesized a fully compostable polymer that degrades into non-toxic compounds within 30 days in seawater environments. Independent testing conducted by the National Renewable Energy Laboratory confirmed the material's structural integrity under operational conditions, with findings published in Nature Materials.",
+        "category": "Science"
+    },
+    {
+        "title": "CRISPR Gene Editing Trial Shows Promising Results in Sickle Cell Disease Patients After 24 Months",
+        "text": "A multi-site clinical investigation using CRISPR-Cas9 gene editing showed that 29 of 30 enrolled sickle cell disease patients were free of severe vaso-occlusive crises after a 24-month follow-up period. Results from the open-label Phase III study were reported at the American Society of Hematology annual conference.",
+        "category": "Science"
+    },
+    # Finance new templates
+    {
+        "title": "SEC Charges Investment Firm with Securities Fraud and Undisclosed Conflicts of Interest",
+        "text": "The U.S. Securities and Exchange Commission filed a civil enforcement action alleging that a registered investment adviser failed to disclose material conflicts of interest to clients while directing assets into affiliated funds. The firm agreed to pay $47 million in disgorgement and civil penalties without admitting wrongdoing.",
+        "category": "Finance"
+    },
+    {
+        "title": "Federal Reserve Publishes Stress Test Results Showing Banking System Resilient Under Severe Recession Scenario",
+        "text": "Annual stress test results published by the Federal Reserve Board confirmed that the 23 largest U.S. bank holding companies maintained sufficient capital buffers to continue lending through a hypothetical severe recession scenario involving a 10 percent unemployment rate and a 40 percent decline in commercial real estate values.",
+        "category": "Finance"
+    },
+    # Technology new templates
+    {
+        "title": "European Parliament Passes Landmark Artificial Intelligence Act Setting Binding Safety Standards",
+        "text": "The European Parliament approved the EU Artificial Intelligence Act, the world's first comprehensive binding regulatory framework for AI systems, by a vote of 523 to 46. The legislation classifies AI applications by risk category and imposes strict conformity assessment obligations on high-risk deployments in healthcare, law enforcement, and critical infrastructure.",
+        "category": "Technology"
+    },
+    {
+        "title": "Open-Source Large Language Model Benchmark Shows Comparable Performance to Proprietary Frontier Models",
+        "text": "Independent evaluations published by Hugging Face and academic researchers at Carnegie Mellon University demonstrated that an open-weight large language model achieves comparable benchmark scores to leading proprietary systems on standardized natural language understanding, code generation, and mathematical reasoning assessments.",
+        "category": "Technology"
+    },
+    # Health new templates
+    {
+        "title": "CDC Issues Updated Respiratory Virus Prevention Guidelines for Healthcare Settings",
+        "text": "The Centers for Disease Control and Prevention released revised infection control recommendations for healthcare facilities, specifying evidence-based protocols for respiratory virus prevention including updated guidance on airborne precautions, ventilation standards, and personal protective equipment selection criteria.",
+        "category": "Health"
+    },
+    {
+        "title": "Randomized Controlled Trial Finds Daily Aspirin Not Recommended for Primary Prevention in Adults Over 60",
+        "text": "A large randomized controlled trial published in the New England Journal of Medicine confirmed that low-dose daily aspirin does not reduce the risk of first cardiovascular events in adults over 60 without established heart disease, while modestly increasing gastrointestinal bleeding risk. Guidelines have been updated accordingly.",
+        "category": "Health"
+    },
+    # Environment new templates  
+    {
+        "title": "IPCC Sixth Assessment Report Projects 1.5 Degree Celsius Warming Threshold Likely Crossed by Early 2030s",
+        "text": "The Intergovernmental Panel on Climate Change Sixth Assessment Report synthesized evidence from over 14,000 peer-reviewed studies, projecting that global mean surface temperatures will likely exceed 1.5 degrees Celsius above pre-industrial levels during the early 2030s under current emissions trajectories, with significant regional variation.",
+        "category": "Environment"
+    },
+    {
+        "title": "Offshore Wind Farm Generates Sufficient Power for 1.5 Million Households During Storm Event",
+        "text": "An 860-megawatt offshore wind installation operated at 97 percent capacity factor during a sustained high-wind weather event, generating sufficient electricity to meet the consumption needs of approximately 1.5 million residential households, according to grid operator metering data verified by the national energy regulator.",
+        "category": "Environment"
+    },
 ]
 
 # --------------------------------------------------------------------------------------
@@ -271,7 +353,62 @@ FAKE_NEWS_TEMPLATES = [
         "title": "CONFIDENTIAL: Secret Vault of Nikola Tesla's Suppressed Free Energy Generators Discovered in Swiss Alps!",
         "text": "An abandoned laboratory in the Swiss Alps was found containing a working magnetic perpetual motion generator built by Nikola Tesla in 1932. The device produces continuous megawatts of clean power without fuel. Global energy monopolies have sent private mercenaries to seize the blueprints!",
         "category": "Conspiracy"
-    }
+    },
+    # Anti-vax and medical misinformation
+    {
+        "title": "BREAKING: Government Caught Adding Sterilization Chemicals to COVID-19 Vaccines to Reduce World Population!",
+        "text": "A brave anonymous laboratory technician has leaked internal documents proving that pharmaceutical manufacturers added synthetic hormone-blocking compounds to COVID vaccine batches targeting reproductive organs. Fertility rates have already dropped by 40 percent in vaccinated populations according to suppressed demographic studies. Wake up before it is too late!",
+        "category": "Anti-Vax"
+    },
+    {
+        "title": "SHOCKING: Flu Vaccines Contain Living Microscopic Parasites That Attach to Brain and Cause Obedience!",
+        "text": "Underground medical researchers discovered that seasonal influenza vaccines distributed nationwide contain microscopic parasitic organisms engineered to cross the blood-brain barrier and suppress critical thinking abilities. Big Pharma pays doctors bonuses for every shot administered. Doctors are terrified to speak out!",
+        "category": "Anti-Vax"
+    },
+    # Crypto and financial scam hoaxes
+    {
+        "title": "EXCLUSIVE: Elon Musk Secretly Giving Away 50,000 Bitcoin to Anyone Who Sends 1 BTC to This Wallet Address!",
+        "text": "In a surprise exclusive livestream, tech billionaire Elon Musk announced a massive cryptocurrency giveaway to reward early Bitcoin adopters. To receive your guaranteed double return send between 0.1 and 5 BTC to the verified address shown on screen. This once-in-a-lifetime opportunity expires in 24 hours!",
+        "category": "Scam"
+    },
+    {
+        "title": "CONFIRMED: New Quantum AI Trading Algorithm Generates Guaranteed 1000% Monthly Returns with Zero Risk!",
+        "text": "Wall Street insiders and Silicon Valley coders developed a secret quantum artificial intelligence trading bot that exploits microsecond price inefficiencies. Beta testers earned between $25,000 and $180,000 within their first 30 days with zero losses recorded. Sign up before regulators shut this down permanently!",
+        "category": "Scam"
+    },
+    # Celebrity hoaxes
+    {
+        "title": "CELEBRITIES ARE CLONES: Hollywood A-Listers Replaced by Government-Controlled Artificial Humanoids!",
+        "text": "Facial recognition experts and forensic analysts have compiled irrefutable photographic evidence showing that numerous top Hollywood celebrities have been replaced by synthetic humanoid clones controlled by government artificial intelligence programs. The originals are held in classified underground facilities. Look for the differences yourself!",
+        "category": "Conspiracy"
+    },
+    {
+        "title": "REVEALED: Famous Pop Star Was Actually Dead for 3 Years and Replaced by a Look-Alike Actor!",
+        "text": "Multiple anonymous insiders from the entertainment industry have confirmed that a beloved global pop star died in a private accident in 2021 and was immediately replaced by a carefully selected lookalike. The record label and family are complicit in the massive deception to protect billion-dollar music royalties!",
+        "category": "Hoax"
+    },
+    # Political disinformation
+    {
+        "title": "PROOF: Presidential Election Voting Machines Were Pre-Programmed to Flip Every Tenth Vote!",
+        "text": "A hacker from an Eastern European nation has delivered USB drives to independent journalists containing source code allegedly stolen from electronic voting machine manufacturers. The code contains a subroutine that systematically flips every tenth recorded ballot in targeted precincts. Share this before big tech censors it!",
+        "category": "Disinfo"
+    },
+    {
+        "title": "EXPOSED: Powerful Politicians Running Secret Human Trafficking Ring Beneath Major City Landmarks!",
+        "text": "An anonymous insider with access to classified federal surveillance footage has revealed that prominent political figures regularly gather in a network of tunnels beneath famous tourist landmarks for criminal meetings. Multiple unnamed witnesses have passed polygraph examinations confirming these allegations!",
+        "category": "Disinfo"
+    },
+    # Environmental fear-mongering
+    {
+        "title": "GOVERNMENT CONFESSION: Chemtrails Are Releasing Lithium Into Atmosphere to Make Citizens Docile and Controllable!",
+        "text": "A retired Air Force pilot has gone public with classified flight manifests proving that commercial airliners secretly release lithium carbonate dust as part of a global mood-control program initiated by the World Economic Forum. Animals and humans consuming rainwater test positive for psychotropic compounds!",
+        "category": "Conspiracy"
+    },
+    {
+        "title": "ALERT: 5G Cell Towers Are Simultaneously Heating Earth's Atmosphere and Causing Artificial Earthquakes in Japan!",
+        "text": "Independent seismologists who have been silenced by mainstream academia discovered that high-frequency 5G microwave transmissions resonate with tectonic fault lines. Cross-referencing earthquake data with 5G tower installation maps confirms a 97 percent geographic overlap. The telecommunications lobby is funding silence!",
+        "category": "Conspiracy"
+    },
 ]
 
 def clean_text(text: str) -> str:
@@ -347,23 +484,30 @@ def create_diverse_dataset():
             "full_content": f"{item['title']} - {item['text']}"
         })
         
-        # Generate 60 diverse stylistic variations per template
-        for _ in range(60):
+        # Generate 85 diverse stylistic variations per template (was 60)
+        for _ in range(85):
             p = random.choice(real_prefixes) if random.random() > 0.3 else ""
             s = random.choice(real_suffixes) if random.random() > 0.3 else ""
             t_var = item["title"]
             if random.random() > 0.5:
                 t_var = f"Report: {t_var}"
-            
-            full = f"{t_var} - {p}{item['text']}{s}"
+            elif random.random() > 0.7:
+                t_var = f"Breaking: {t_var}"
+
+            body = f"{p}{item['text']}{s}"
+            # Skip degenerate short samples
+            if len(body.split()) < 8:
+                continue
+
+            full = f"{t_var} - {body}"
             records.append({
                 "title": t_var,
-                "text": f"{p}{item['text']}{s}",
+                "text": body,
                 "category": item["category"],
                 "label": 0,
                 "full_content": full
             })
-            
+
     # 2. Expand FAKE news templates
     for item in FAKE_NEWS_TEMPLATES:
         records.append({
@@ -373,19 +517,26 @@ def create_diverse_dataset():
             "label": 1,
             "full_content": f"{item['title']} - {item['text']}"
         })
-        
-        # Generate 60 diverse stylistic variations per template
-        for _ in range(60):
+
+        # Generate 85 diverse stylistic variations per template (was 60)
+        for _ in range(85):
             p = random.choice(fake_prefixes) if random.random() > 0.2 else ""
             s = random.choice(fake_suffixes) if random.random() > 0.2 else ""
             t_var = item["title"]
             if random.random() > 0.4:
                 t_var = t_var.upper()
-                
-            full = f"{p}{t_var} - {item['text']}{s}"
+            elif random.random() > 0.6:
+                t_var = f"ALERT: {t_var}"
+
+            body = f"{item['text']}{s}"
+            # Skip degenerate short samples
+            if len(body.split()) < 8:
+                continue
+
+            full = f"{p}{t_var} - {body}"
             records.append({
                 "title": t_var,
-                "text": f"{item['text']}{s}",
+                "text": body,
                 "category": item["category"],
                 "label": 1,
                 "full_content": full
@@ -408,7 +559,17 @@ def create_diverse_dataset():
     
     words_all = " ".join(df["cleaned_text"]).split()
     unique_vocab = set(words_all)
-    
+
+    # Category distribution
+    category_dist = df.groupby(["category", "label"]).size().reset_index(name="count")
+    category_dist_dict = {}
+    for _, row in category_dist.iterrows():
+        cat = row["category"]
+        lbl = "fake" if row["label"] == 1 else "real"
+        if cat not in category_dist_dict:
+            category_dist_dict[cat] = {}
+        category_dist_dict[cat][lbl] = int(row["count"])
+
     stats = {
         "total_samples": len(df),
         "real_count": int((df["label"] == 0).sum()),
@@ -417,7 +578,10 @@ def create_diverse_dataset():
         "val_samples": len(val_df),
         "test_samples": len(test_df),
         "unique_vocabulary_tokens": len(unique_vocab),
-        "avg_words_per_article": float(df["cleaned_text"].apply(lambda x: len(x.split())).mean())
+        "avg_words_per_article": float(df["cleaned_text"].apply(lambda x: len(x.split())).mean()),
+        "category_distribution": category_dist_dict,
+        "num_real_templates": len(REAL_NEWS_TEMPLATES),
+        "num_fake_templates": len(FAKE_NEWS_TEMPLATES)
     }
     
     with open(os.path.join(DATA_DIR, "dataset_stats.json"), "w", encoding="utf-8") as f:

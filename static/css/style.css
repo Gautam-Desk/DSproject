@@ -1166,3 +1166,81 @@ body {
   .linguistics-grid { grid-template-columns: 1fr; }
   .dataset-stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ──────────────────────────────────────────────
+   Input Warning Banner (short text alert)
+────────────────────────────────────────────── */
+.input-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+  padding-left: 0.1rem;
+}
+
+.warning-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: #fbbf24;
+  animation: fadeInDown 0.25s ease;
+}
+.warning-banner svg { flex-shrink: 0; color: #f59e0b; }
+
+/* ──────────────────────────────────────────────
+   Uncertainty Banner (borderline confidence)
+────────────────────────────────────────────── */
+.uncertainty-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: rgba(99, 102, 241, 0.10);
+  border: 1px solid rgba(99, 102, 241, 0.30);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  font-size: 0.82rem;
+  color: #a5b4fc;
+  animation: fadeInDown 0.25s ease;
+}
+.uncertainty-banner svg { flex-shrink: 0; color: #818cf8; margin-top: 2px; }
+.uncertainty-banner strong { display: block; color: #c7d2fe; margin-bottom: 0.2rem; font-size: 0.84rem; }
+
+/* ──────────────────────────────────────────────
+   HIGH risk tag color
+────────────────────────────────────────────── */
+.risk-tag.high {
+  background: rgba(249, 115, 22, 0.15);
+  color: #fb923c;
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+/* ──────────────────────────────────────────────
+   Component score pills (deep/tfidf/heuristic)
+────────────────────────────────────────────── */
+.component-scores {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+.comp-pill {
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.comp-pill span { color: var(--text-primary); font-weight: 600; }
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

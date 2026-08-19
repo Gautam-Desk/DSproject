@@ -2,6 +2,13 @@
 High-Precision FastAPI Server for VeritasAI Fake News Detection.
 Combines Deep Learning Neural Networks (TensorFlow/Keras) with N-Gram Classifiers,
 Token Saliency Explainability, and Instant LAN/Mobile QR Sharing.
+
+v3.0 Changes:
+  - Batch endpoint now uses IDENTICAL ensemble weights as single predict
+  - Heuristic replaced with continuous sigmoid-based signal (no more 3-state cliff)
+  - FastAPI lifespan replaces deprecated on_event("startup")
+  - Input validation: min word count check + uncertainty_flag in response
+  - is_grey_zone forwarded from explainer into response
 """
 
 import os
@@ -12,15 +19,17 @@ import socket
 import re
 import time
 import pickle
+import math
 import qrcode
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 
 from explainer import analyze_linguistics, compute_token_saliency
@@ -39,10 +48,90 @@ DATASET_STATS_PATH = os.path.join(DATA_DIR, "dataset_stats.json")
 PORT = int(os.environ.get("PORT", 8000))
 HOST = os.environ.get("HOST", "0.0.0.0")
 
+# Ensemble weights (SINGLE source of truth — used by BOTH endpoints)
+W_DEEP  = 0.55   # Deep neural network weight
+W_TFIDF = 0.35   # TF-IDF N-gram classifier weight
+W_HEUR  = 0.10   # Heuristic / linguistic signal weight
+MIN_WORD_COUNT = 10  # Below this → warn + lower confidence
+
+# ──────────────────────────────────────────────────────────────
+# Resources (module-level singletons)
+# ──────────────────────────────────────────────────────────────
+tf_model       = None
+vectorizer     = None
+tfidf_vectorizer = None
+tfidf_classifier = None
+metrics_data   = None
+dataset_stats  = None
+
+
+def get_local_ip() -> str:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except Exception:
+        return "127.0.0.1"
+
+
+def load_resources():
+    global tf_model, vectorizer, tfidf_vectorizer, tfidf_classifier, metrics_data, dataset_stats
+    print("Initializing VeritasAI Neural Engines...")
+
+    # 1. Keras TextVectorization layer
+    if os.path.exists(VOCAB_PATH) and os.path.exists(BEST_MODEL_PATH):
+        with open(VOCAB_PATH, "r", encoding="utf-8") as f:
+            vocab = json.load(f)
+        vec_layer = keras.layers.TextVectorization(
+            max_tokens=len(vocab),
+            output_mode="int",
+            output_sequence_length=220,
+            standardize="lower_and_strip_punctuation"
+        )
+        vec_layer.adapt(tf.constant(["warmup"]))
+        vec_layer.set_vocabulary(vocab)
+        vectorizer = vec_layer
+        print(f"Keras Vectorizer loaded with {len(vocab)} tokens.")
+
+    # 2. TensorFlow deep model
+    if os.path.exists(BEST_MODEL_PATH):
+        tf_model = keras.models.load_model(BEST_MODEL_PATH)
+        print("TensorFlow Deep Learning model loaded.")
+
+    # 3. TF-IDF N-gram Calibrated Classifier
+    if os.path.exists(TFIDF_VEC_PATH) and os.path.exists(TFIDF_MOD_PATH):
+        with open(TFIDF_VEC_PATH, "rb") as f:
+            tfidf_vectorizer = pickle.load(f)
+        with open(TFIDF_MOD_PATH, "rb") as f:
+            tfidf_classifier = pickle.load(f)
+        print("TF-IDF N-Gram calibrated classifier loaded.")
+
+    # 4. Metrics & Dataset Stats
+    if os.path.exists(METRICS_PATH):
+        with open(METRICS_PATH, "r", encoding="utf-8") as f:
+            metrics_data = json.load(f)
+
+    if os.path.exists(DATASET_STATS_PATH):
+        with open(DATASET_STATS_PATH, "r", encoding="utf-8") as f:
+            dataset_stats = json.load(f)
+
+
+# ──────────────────────────────────────────────────────────────
+# Lifespan (replaces deprecated on_event)
+# ──────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    load_resources()
+    yield
+
+# ──────────────────────────────────────────────────────────────
+# App
+# ──────────────────────────────────────────────────────────────
 app = FastAPI(
     title="VeritasAI - High-Accuracy Fake News Detection Engine",
     description="Multi-Model Deep Learning NLP System for Misinformation Identification",
-    version="2.0.0"
+    version="3.0.0",
+    lifespan=lifespan,
 )
 
 # CORS Policy
@@ -64,7 +153,6 @@ async def security_middleware(request: Request, call_next):
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             content={"detail": "Payload too large. Maximum allowed size is 1MB."}
         )
-    
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -75,82 +163,62 @@ async def security_middleware(request: Request, call_next):
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-# Resources
-tf_model = None
-vectorizer = None
-tfidf_vectorizer = None
-tfidf_classifier = None
-vocab = []
-metrics_data = {}
-dataset_stats = {}
 
-def get_local_ip():
-    """Detects local network IP for Wi-Fi sharing."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0.5)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
-
-def load_resources():
-    """Loads all models and vectorizers."""
-    global tf_model, vectorizer, tfidf_vectorizer, tfidf_classifier, vocab, metrics_data, dataset_stats
-    print("Initializing VeritasAI Neural Engines...")
-    
-    # 1. Text Vectorizer
-    if os.path.exists(VOCAB_PATH):
-        with open(VOCAB_PATH, "r", encoding="utf-8") as f:
-            vocab = json.load(f)
-            
-        vectorizer = keras.layers.TextVectorization(
-            max_tokens=8000,
-            output_mode='int',
-            output_sequence_length=160,
-            standardize='lower_and_strip_punctuation',
-            vocabulary=vocab
-        )
-        print(f"Keras Vectorizer loaded with {len(vocab)} tokens.")
-
-    # 2. Deep Learning Keras Model
-    if os.path.exists(BEST_MODEL_PATH):
-        tf_model = keras.models.load_model(BEST_MODEL_PATH)
-        print("TensorFlow Deep Learning model loaded.")
-
-    # 3. TF-IDF N-gram Model
-    if os.path.exists(TFIDF_VEC_PATH) and os.path.exists(TFIDF_MOD_PATH):
-        with open(TFIDF_VEC_PATH, "rb") as f:
-            tfidf_vectorizer = pickle.load(f)
-        with open(TFIDF_MOD_PATH, "rb") as f:
-            tfidf_classifier = pickle.load(f)
-        print("TF-IDF N-Gram calibrated classifier loaded.")
-
-    # 4. Metrics & Dataset Stats
-    if os.path.exists(METRICS_PATH):
-        with open(METRICS_PATH, "r", encoding="utf-8") as f:
-            metrics_data = json.load(f)
-            
-    if os.path.exists(DATASET_STATS_PATH):
-        with open(DATASET_STATS_PATH, "r", encoding="utf-8") as f:
-            dataset_stats = json.load(f)
-
-@app.on_event("startup")
-def startup_event():
-    load_resources()
-
+# ──────────────────────────────────────────────────────────────
 # Request Models
+# ──────────────────────────────────────────────────────────────
 class NewsItem(BaseModel):
     title: str = Field(..., max_length=500, description="Headline or title")
     text: str = Field(..., max_length=15000, description="Article body text")
     source: Optional[str] = Field(None, max_length=200)
 
+    @field_validator("title", "text", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v):
+        return v.strip() if isinstance(v, str) else v
+
+
 class BatchNewsRequest(BaseModel):
     articles: List[NewsItem] = Field(..., max_length=50)
 
+
+# ──────────────────────────────────────────────────────────────
+# Ensemble helper — continuous heuristic (replaces 3-state cliff)
+# ──────────────────────────────────────────────────────────────
+def _compute_heuristic(sens_score: float, cred_score: float) -> float:
+    """
+    Continuous heuristic probability based on sensationalism vs credibility scores.
+    Uses a sigmoid-like blend so there's no abrupt cliff between states.
+    Range: [0.05, 0.95]
+    """
+    net = sens_score - cred_score          # positive = more fake
+    # Sigmoid: 1 / (1 + e^(-net/20))  scaled to [0.05, 0.95]
+    raw = 1.0 / (1.0 + math.exp(-net / 20.0))
+    return 0.05 + 0.90 * raw              # clamp to [0.05, 0.95]
+
+
+def _ensemble(tf_raw: float, tfidf_raw: float, heuristic: float) -> float:
+    """Single source-of-truth ensemble formula used by ALL endpoints."""
+    p = W_DEEP * tf_raw + W_TFIDF * tfidf_raw + W_HEUR * heuristic
+    return max(0.001, min(0.999, p))
+
+
+def _risk_level(fake_prob: float) -> tuple[str, str]:
+    if fake_prob >= 0.80:
+        return "CRITICAL", "High probability of deceptive misinformation, fabricated claims, or conspiracy propaganda."
+    elif fake_prob >= 0.65:
+        return "HIGH", "Elevated risk of sensationalism, unverified claims, or manipulative framing."
+    elif fake_prob >= 0.50:
+        return "MODERATE", "Moderate risk — some sensational language or unverified claims present."
+    elif fake_prob >= 0.25:
+        return "LOW", "Predominantly factual reporting with standard journalistic framing."
+    else:
+        return "MINIMAL", "High consistency with empirical evidence, peer review, and institutional attribution."
+
+
+# ──────────────────────────────────────────────────────────────
 # Curated Samples
+# ──────────────────────────────────────────────────────────────
 SAMPLE_ARTICLES = [
     {
         "id": "sample-1",
@@ -202,6 +270,10 @@ SAMPLE_ARTICLES = [
     }
 ]
 
+
+# ──────────────────────────────────────────────────────────────
+# Routes
+# ──────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_path = os.path.join(STATIC_DIR, "index.html")
@@ -209,78 +281,72 @@ async def serve_index():
         return FileResponse(index_path)
     return HTMLResponse("<h1>VeritasAI Backend Running.</h1>")
 
+
 @app.post("/api/predict")
 async def predict_news(item: NewsItem):
     """
     High-Precision Ensemble Prediction combining Deep Neural Activations,
-    N-Gram Subword Classifiers, and Linguistic Attributions.
+    N-Gram Subword Classifiers, Continuous Linguistic Heuristics, and Token Saliency.
     """
     if not tf_model or not vectorizer:
         load_resources()
         if not tf_model or not vectorizer:
-            raise HTTPException(status_code=503, detail="Neural models initializing.")
+            raise HTTPException(status_code=503, detail="Neural models initializing. Please retry in a few seconds.")
 
     title = item.title.strip()
-    text = item.text.strip()
-    
+    text  = item.text.strip()
+
     if not title and not text:
         raise HTTPException(status_code=400, detail="Please provide headline or body content.")
-        
+
     combined_text = f"{title} - {text}".strip()
+
+    # Input quality check
+    word_count = len(combined_text.split())
+    too_short = word_count < MIN_WORD_COUNT
+
     start_time = time.time()
-    
+
     # 1. Deep Neural Prediction (Keras/TensorFlow)
     seq = vectorizer(tf.constant([combined_text])).numpy()
     tf_pred_raw = float(tf_model.predict(seq, verbose=0)[0][0])
-    
+
     # 2. N-Gram Calibrated Subword Classifier Prediction
     if tfidf_classifier and tfidf_vectorizer:
         tfidf_feat = tfidf_vectorizer.transform([combined_text])
         tfidf_pred_raw = float(tfidf_classifier.predict_proba(tfidf_feat)[0][1])
     else:
         tfidf_pred_raw = tf_pred_raw
-        
-    # 3. Linguistic Diagnostics & Heuristics
+
+    # 3. Continuous Linguistic Heuristic (replaces old 3-state cliff)
     linguistics = analyze_linguistics(title, text)
     sens_score = linguistics["sensationalism_score"]
     cred_score = linguistics["credibility_marker_score"]
-    
-    # Heuristic Signal
-    if sens_score > 35.0 and cred_score < 15.0:
-        heuristic_prob = 0.95
-    elif cred_score > 30.0 and sens_score < 15.0:
-        heuristic_prob = 0.05
-    else:
-        heuristic_prob = 0.50
-        
-    # Calibrated Ensemble Probability
-    fake_prob = (0.55 * tf_pred_raw) + (0.35 * tfidf_pred_raw) + (0.10 * heuristic_prob)
-    fake_prob = max(0.001, min(0.999, fake_prob))
+    heuristic_prob = _compute_heuristic(sens_score, cred_score)
+
+    # 4. Calibrated Ensemble Probability (SINGLE formula for all endpoints)
+    fake_prob = _ensemble(tf_pred_raw, tfidf_pred_raw, heuristic_prob)
     real_prob = 1.0 - fake_prob
-    
+
     inference_ms = (time.time() - start_time) * 1000
-    
-    # Verdict Assignment
+
+    # Verdict & Confidence
     is_fake = fake_prob >= 0.50
     verdict = "FAKE" if is_fake else "REAL"
     confidence = (fake_prob if is_fake else real_prob) * 100.0
-    
+
+    # Uncertainty flag (borderline predictions)
+    uncertainty_flag = 40.0 <= (fake_prob * 100) <= 65.0
+
+    # Degrade confidence for very short inputs
+    if too_short:
+        confidence = min(confidence, 65.0)
+
+    # Risk Assessment
+    risk_level, risk_description = _risk_level(fake_prob)
+
     # Saliency Tokens
     saliency = compute_token_saliency(combined_text, fake_prob)
-    
-    # Risk Assessment Level
-    if fake_prob >= 0.80:
-        risk_level = "CRITICAL"
-        risk_description = "High probability of deceptive misinformation, fabricated claims, or conspiracy propaganda."
-    elif fake_prob >= 0.50:
-        risk_level = "MODERATE"
-        risk_description = "Moderate risk of sensationalism, unverified claims, or clickbait exaggeration."
-    elif fake_prob >= 0.20:
-        risk_level = "LOW"
-        risk_description = "Predominantly factual reporting with standard journalistic framing."
-    else:
-        risk_level = "MINIMAL"
-        risk_description = "High consistency with empirical evidence, peer review, and institutional attribution."
 
     return {
         "verdict": verdict,
@@ -288,63 +354,79 @@ async def predict_news(item: NewsItem):
         "fake_probability": round(fake_prob * 100, 2),
         "real_probability": round(real_prob * 100, 2),
         "confidence": round(confidence, 1),
+        "uncertainty_flag": uncertainty_flag,
+        "too_short_warning": too_short,
+        "word_count": word_count,
         "risk_level": risk_level,
         "risk_description": risk_description,
         "inference_latency_ms": round(inference_ms, 2),
-        "model_architecture": "Ensemble (Deep BiLSTM + Self-Attention + N-Gram)",
+        "model_architecture": "Ensemble (Deep BiLSTM + Self-Attention + TF-IDF Trigram) v3",
         "linguistics": linguistics,
-        "saliency_tokens": saliency
+        "saliency_tokens": saliency,
+        "component_scores": {
+            "deep_neural": round(tf_pred_raw * 100, 1),
+            "tfidf_ngram": round(tfidf_pred_raw * 100, 1),
+            "linguistic_heuristic": round(heuristic_prob * 100, 1),
+        }
     }
+
 
 @app.post("/api/batch-predict")
 async def batch_predict(batch: BatchNewsRequest):
-    """Vectorized Parallel Batch Inference."""
+    """
+    Vectorized Parallel Batch Inference.
+    Uses IDENTICAL ensemble weights as single /api/predict.
+    """
     if not tf_model or not vectorizer:
         load_resources()
         if not tf_model or not vectorizer:
             raise HTTPException(status_code=503, detail="Neural models initializing.")
-            
+
     items = batch.articles
     if not items:
         return {"results": [], "summary": {}}
-        
+
     combined_texts = [f"{item.title} - {item.text}".strip() for item in items]
     start_time = time.time()
-    
+
     seqs = vectorizer(tf.constant(combined_texts)).numpy()
     tf_preds = tf_model.predict(seqs, verbose=0).ravel()
-    
+
     if tfidf_classifier and tfidf_vectorizer:
         tfidf_feats = tfidf_vectorizer.transform(combined_texts)
         tfidf_preds = tfidf_classifier.predict_proba(tfidf_feats)[:, 1]
     else:
         tfidf_preds = tf_preds
-        
+
     total_time_ms = (time.time() - start_time) * 1000
-    
+
     results = []
     fake_count = 0
     real_count = 0
-    
+
     for i, item in enumerate(items):
-        f_p = float((0.60 * tf_preds[i]) + (0.40 * tfidf_preds[i]))
-        f_p = max(0.001, min(0.999, f_p))
+        # Use SAME heuristic per article
+        ling = analyze_linguistics(item.title, item.text)
+        heur = _compute_heuristic(ling["sensationalism_score"], ling["credibility_marker_score"])
+
+        f_p = _ensemble(float(tf_preds[i]), float(tfidf_preds[i]), heur)
         r_p = 1.0 - f_p
         is_f = f_p >= 0.50
-        
+
         if is_f:
             fake_count += 1
         else:
             real_count += 1
-            
+
         results.append({
             "title": item.title,
             "verdict": "FAKE" if is_f else "REAL",
             "fake_probability": round(f_p * 100, 1),
             "real_probability": round(r_p * 100, 1),
-            "confidence": round((f_p if is_f else r_p) * 100, 1)
+            "confidence": round((f_p if is_f else r_p) * 100, 1),
+            "uncertainty_flag": 40.0 <= (f_p * 100) <= 65.0,
         })
-        
+
     return {
         "results": results,
         "summary": {
@@ -357,6 +439,7 @@ async def batch_predict(batch: BatchNewsRequest):
         }
     }
 
+
 @app.get("/api/benchmark")
 async def get_benchmark():
     global metrics_data
@@ -365,9 +448,11 @@ async def get_benchmark():
             metrics_data = json.load(f)
     return metrics_data
 
+
 @app.get("/api/samples")
 async def get_samples():
     return SAMPLE_ARTICLES
+
 
 @app.get("/api/dataset-stats")
 async def get_dataset_stats():
@@ -377,21 +462,22 @@ async def get_dataset_stats():
             dataset_stats = json.load(f)
     return dataset_stats
 
+
 @app.get("/api/share-info")
 async def get_share_info():
     local_ip = get_local_ip()
     local_url = f"http://localhost:{PORT}"
     network_url = f"http://{local_ip}:{PORT}"
-    
+
     qr = qrcode.QRCode(version=1, box_size=8, border=2)
     qr.add_data(network_url)
     qr.make(fit=True)
     img = qr.make_image(fill_color="#0f172a", back_color="#ffffff")
-    
+
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     qr_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-    
+
     return {
         "local_url": local_url,
         "network_url": network_url,
@@ -405,14 +491,18 @@ async def get_share_info():
         }
     }
 
+
 @app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
         "tensorflow_loaded": tf_model is not None,
         "tfidf_loaded": tfidf_classifier is not None,
+        "version": "3.0.0",
+        "ensemble_weights": {"deep": W_DEEP, "tfidf": W_TFIDF, "heuristic": W_HEUR},
         "timestamp": time.time()
     }
+
 
 if __name__ == "__main__":
     import uvicorn

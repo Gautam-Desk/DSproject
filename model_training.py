@@ -25,11 +25,11 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(MODELS_DIR, exist_ok=True)
 
-MAX_VOCAB_SIZE = 8000
-MAX_SEQUENCE_LENGTH = 160
+MAX_VOCAB_SIZE = 12000
+MAX_SEQUENCE_LENGTH = 220
 EMBEDDING_DIM = 128
 BATCH_SIZE = 32
-EPOCHS = 16
+EPOCHS = 20
 
 def load_data():
     """Loads train, val, and test splits."""
@@ -201,13 +201,26 @@ def train_all_models():
     with open(os.path.join(MODELS_DIR, "tokenizer_config.json"), "w", encoding="utf-8") as f:
         json.dump(tokenizer_config, f, indent=2)
         
-    # 2. Train TF-IDF Subword + N-gram Baseline
-    print("\n--- Training TF-IDF N-gram Classifier ---")
-    tfidf = TfidfVectorizer(ngram_range=(1, 2), max_features=MAX_VOCAB_SIZE, sublinear_tf=True)
+    # 2. Train TF-IDF Subword + Trigram Baseline
+    print("\n--- Training TF-IDF Trigram Classifier ---")
+    tfidf = TfidfVectorizer(
+        ngram_range=(1, 3),        # Extended to trigrams for phrase capture
+        max_features=MAX_VOCAB_SIZE,
+        sublinear_tf=True,
+        min_df=2,                  # Ignore extremely rare tokens
+        strip_accents='unicode'
+    )
     X_train_tfidf = tfidf.fit_transform(X_train)
+    X_val_tfidf = tfidf.transform(X_val)
     X_test_tfidf = tfidf.transform(X_test)
-    
-    baseline_clf = LogisticRegression(C=2.0, max_iter=300)
+
+    baseline_clf = LogisticRegression(
+        C=2.0,
+        max_iter=500,
+        class_weight='balanced',   # Handle class imbalance
+        solver='lbfgs',
+        n_jobs=-1
+    )
     baseline_clf.fit(X_train_tfidf, y_train)
     
     # Save TF-IDF Vectorizer & Classifier
@@ -237,7 +250,18 @@ def train_all_models():
     best_name = ""
     
     callbacks = [
-        keras.callbacks.EarlyStopping(monitor="val_loss", patience=4, restore_best_weights=True)
+        keras.callbacks.EarlyStopping(
+            monitor="val_f1_score" if False else "val_loss",
+            patience=5,
+            restore_best_weights=True,
+            mode="min"
+        ),
+        keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=0.5,
+            patience=2,
+            min_lr=1e-5
+        ),
     ]
     
     for name, model in models_to_train:

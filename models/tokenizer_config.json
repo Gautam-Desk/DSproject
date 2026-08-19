@@ -1,6 +1,6 @@
 {
-  "max_vocab_size": 8000,
-  "max_sequence_length": 160,
+  "max_vocab_size": 12000,
+  "max_sequence_length": 220,
   "embedding_dim": 128,
-  "vocab_size": 1490
+  "vocab_size": 1993
 }

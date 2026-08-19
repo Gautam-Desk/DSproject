@@ -1,10 +1,62 @@
 {
-  "total_samples": 2745,
-  "real_count": 1525,
-  "fake_count": 1220,
-  "train_samples": 1921,
-  "val_samples": 412,
-  "test_samples": 412,
-  "unique_vocabulary_tokens": 1545,
-  "avg_words_per_article": 68.56867030965391
+  "total_samples": 6020,
+  "real_count": 3440,
+  "fake_count": 2580,
+  "train_samples": 4214,
+  "val_samples": 903,
+  "test_samples": 903,
+  "unique_vocabulary_tokens": 2097,
+  "avg_words_per_article": 69.22674418604652,
+  "category_distribution": {
+    "Anti-Vax": {
+      "fake": 172
+    },
+    "Clickbait": {
+      "fake": 172
+    },
+    "Conspiracy": {
+      "fake": 860
+    },
+    "Disinfo": {
+      "fake": 172
+    },
+    "Environment": {
+      "real": 430
+    },
+    "Finance": {
+      "real": 516
+    },
+    "Health": {
+      "real": 516
+    },
+    "Health Hoax": {
+      "fake": 344
+    },
+    "Hoax": {
+      "fake": 430
+    },
+    "Panic": {
+      "fake": 172
+    },
+    "Politics": {
+      "real": 344
+    },
+    "Scam": {
+      "fake": 258
+    },
+    "Science": {
+      "real": 516
+    },
+    "Sports": {
+      "real": 172
+    },
+    "Technology": {
+      "real": 516
+    },
+    "World": {
+      "real": 430
+    }
+  },
+  "num_real_templates": 40,
+  "num_fake_templates": 30
 }

@@ -76,7 +76,7 @@ def test_model_loading_and_shape():
     model_path = os.path.join(MODELS_DIR, "best_fake_news_model.keras")
     model = keras.models.load_model(model_path)
     assert model is not None
-    assert model.input_shape in [(None, 150), (None, 160)]
+    assert model.input_shape in [(None, 150), (None, 160), (None, 220)]
     assert model.output_shape == (None, 1)
 
 def test_vocabulary_integrity():

@@ -108,16 +108,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  const titleCharCount = document.getElementById('title-char-count');
+  const inputWarningBanner = document.getElementById('input-warning-banner');
+  const uncertaintyBanner = document.getElementById('uncertainty-banner');
+
   // ==========================================
-  // 2. Word Count & Clipboard Action
+  // 2. Word Count, Char Counter & Clipboard Action
   // ==========================================
   function updateWordCount() {
     const text = newsTextInput.value.trim();
     const words = text ? text.split(/\s+/).length : 0;
     bodyCharCount.textContent = `${words} words`;
+
+    // Show/hide input length warning
+    const titleWords = newsTitleInput.value.trim().split(/\s+/).filter(Boolean).length;
+    const totalWords = words + titleWords;
+    if (inputWarningBanner) {
+      if (totalWords > 0 && totalWords < 30) {
+        inputWarningBanner.classList.remove('hidden');
+      } else {
+        inputWarningBanner.classList.add('hidden');
+      }
+    }
+  }
+
+  function updateTitleCharCount() {
+    const len = newsTitleInput.value.length;
+    if (titleCharCount) titleCharCount.textContent = `${len} / 500`;
   }
 
   newsTextInput.addEventListener('input', updateWordCount);
+  newsTitleInput.addEventListener('input', () => {
+    updateWordCount();
+    updateTitleCharCount();
+  });
 
   btnPasteClipboard.addEventListener('click', async () => {
     try {
@@ -131,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
           newsTextInput.value = text;
         }
         updateWordCount();
+        updateTitleCharCount();
       }
     } catch (err) {
       alert('Could not read clipboard. Please paste directly with Ctrl+V.');
@@ -193,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resultsEmptyState.classList.add('hidden');
     resultsActiveState.classList.add('hidden');
     resultsLoadingState.classList.remove('hidden');
+    if (uncertaintyBanner) uncertaintyBanner.classList.add('hidden');
 
     try {
       const res = await fetch('/api/predict', {
@@ -201,7 +227,20 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ title, text })
       });
 
-      if (!res.ok) throw new Error('Inference request failed');
+      if (res.status === 422) {
+        const errData = await res.json();
+        const msg = errData.detail?.[0]?.msg || 'Invalid input. Please check your text and try again.';
+        alert(`Input Error: ${msg}`);
+        resultsLoadingState.classList.add('hidden');
+        resultsEmptyState.classList.remove('hidden');
+        return;
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error (${res.status}). Please try again.`);
+      }
+
       const data = await res.json();
       renderPredictionResults(data);
     } catch (err) {
@@ -269,7 +308,38 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Word-Level Saliency Highlighter
+    // Uncertainty / low-confidence banner
+    if (uncertaintyBanner) {
+      if (data.uncertainty_flag || data.too_short_warning) {
+        uncertaintyBanner.classList.remove('hidden');
+        const utxt = document.getElementById('uncertainty-text');
+        if (utxt) {
+          if (data.too_short_warning) {
+            utxt.textContent = `Only ${data.word_count} words detected — results may be unreliable. Provide more article text for a confident prediction.`;
+          } else {
+            utxt.textContent = 'The model is uncertain (confidence 50–65%). This article has mixed linguistic signals — verify with a primary source.';
+          }
+        }
+      } else {
+        uncertaintyBanner.classList.add('hidden');
+      }
+    }
+
+    // Component scores breakdown
+    if (data.component_scores) {
+      const cs = data.component_scores;
+      const existingScores = document.getElementById('component-scores-row');
+      if (existingScores) existingScores.remove();
+      const scoresDiv = document.createElement('div');
+      scoresDiv.id = 'component-scores-row';
+      scoresDiv.className = 'component-scores';
+      scoresDiv.innerHTML = `
+        <span class="comp-pill">🧠 Deep Neural: <span>${cs.deep_neural.toFixed(1)}%</span></span>
+        <span class="comp-pill">📊 TF-IDF N-gram: <span>${cs.tfidf_ngram.toFixed(1)}%</span></span>
+        <span class="comp-pill">🔍 Linguistic: <span>${cs.linguistic_heuristic.toFixed(1)}%</span></span>
+      `;
+      reasoningBulletsList.parentElement.appendChild(scoresDiv);
+    }
     renderSaliencyHighlights(data.saliency_tokens);
 
     // Linguistic Diagnostics

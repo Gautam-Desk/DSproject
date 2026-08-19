@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VeritasAI - High-Accuracy Fake News Detection Engine</title>
   <meta name="description" content="AI-powered fake news and misinformation detection platform using TensorFlow deep learning, BiLSTM attention networks, and token saliency explainability.">
+  <meta property="og:title" content="VeritasAI - Fake News Detection Engine">
+  <meta property="og:description" content="Paste any news headline and article to instantly detect misinformation using deep neural networks and linguistic analysis.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="VeritasAI - Fake News Detector">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/><path d='m9 12 2 2 4-4'/></svg>">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -90,12 +96,16 @@
             <div class="form-group">
               <div class="label-row">
                 <label for="news-title" class="input-label">Headline / Title</label>
-                <button type="button" class="btn-text-action" id="btn-paste-clipboard">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-                  Paste from Clipboard
-                </button>
+                <div style="display:flex;gap:10px;align-items:center">
+                  <span class="char-count" id="title-char-count">0 / 500</span>
+                  <button type="button" class="btn-text-action" id="btn-paste-clipboard">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                    Paste from Clipboard
+                  </button>
+                </div>
               </div>
-              <input type="text" id="news-title" class="text-input" placeholder="e.g. NASA James Webb Telescope Discovers Ancient Galaxy..." required autocomplete="off">
+              <input type="text" id="news-title" class="text-input" placeholder="e.g. NASA James Webb Telescope Discovers Ancient Galaxy..." autocomplete="off" maxlength="500">
+            </div>
             </div>
 
             <div class="form-group">
@@ -104,6 +114,13 @@
                 <span class="char-count" id="body-char-count">0 words</span>
               </div>
               <textarea id="news-text" class="textarea-input" rows="7" placeholder="Paste full article text, social media report, or press release here..." required></textarea>
+              <p class="input-hint" id="word-count-hint">💡 Tip: at least 30–50 words recommended for reliable detection.</p>
+            </div>
+
+            <!-- Input Warning Banner -->
+            <div class="warning-banner hidden" id="input-warning-banner">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span id="input-warning-text">Very short input — results may be unreliable. Add more context for a better prediction.</span>
             </div>
 
             <div class="form-actions">
@@ -177,6 +194,15 @@
                     <span class="gauge-label" id="gauge-label">Authentic</span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Uncertainty Banner (shown when confidence 50-65%) -->
+            <div class="uncertainty-banner hidden" id="uncertainty-banner">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <div>
+                <strong>Low Confidence Prediction</strong>
+                <span id="uncertainty-text">The model is uncertain — this article has mixed signals. Cross-check with a trusted primary source before concluding.</span>
               </div>
             </div>
 
