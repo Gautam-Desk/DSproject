@@ -115,19 +115,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   // Help Modal — "How to Use"
   // ==========================================
-  const helpModal        = document.getElementById('help-modal');
-  const btnOpenHelp      = document.getElementById('btn-open-help');
-  const btnCloseHelp     = document.getElementById('btn-close-help');
-  const btnCloseHelpFtr  = document.getElementById('btn-close-help-footer');
-  const helpDontShow     = document.getElementById('help-dont-show-again');
+  const helpModal       = document.getElementById('help-modal');
+  const btnOpenHelp     = document.getElementById('btn-open-help');
+  const btnCloseHelp    = document.getElementById('btn-close-help');
+  const btnCloseHelpFtr = document.getElementById('btn-close-help-footer');
+  const helpDontShow    = document.getElementById('help-dont-show-again');
 
   function openHelpModal() {
     if (helpModal) helpModal.showModal();
   }
 
   function closeHelpModal() {
-    if (!helpModal) return;
-    // Save preference if checkbox is ticked
+    if (!helpModal || !helpModal.open) return;
     if (helpDontShow && helpDontShow.checked) {
       localStorage.setItem('veritasai_help_seen', '1');
     }
@@ -138,22 +137,31 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCloseHelp)    btnCloseHelp.addEventListener('click', closeHelpModal);
   if (btnCloseHelpFtr) btnCloseHelpFtr.addEventListener('click', closeHelpModal);
 
-  // Close on backdrop click
+  // Close on backdrop click — detect click outside the inner content rect
   if (helpModal) {
     helpModal.addEventListener('click', (e) => {
+      const rect = helpModal.getBoundingClientRect();
+      const isInsideContent = (
+        e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top  && e.clientY <= rect.bottom
+      );
+      // The dialog element IS the backdrop, so clicking the padded area outside
+      // the inner box triggers this. We check if the direct target is the dialog itself.
       if (e.target === helpModal) closeHelpModal();
     });
-    // Close on Escape key (native dialog handles this, but ensure preference saved)
-    helpModal.addEventListener('cancel', (e) => {
-      e.preventDefault();
-      closeHelpModal();
+
+    // Escape key: let browser close natively, but save preference first
+    helpModal.addEventListener('cancel', () => {
+      if (helpDontShow && helpDontShow.checked) {
+        localStorage.setItem('veritasai_help_seen', '1');
+      }
+      // Allow default close (do NOT call e.preventDefault())
     });
   }
 
-  // Auto-show on first visit (unless user dismissed with "don't show again")
+  // Auto-show on first visit
   if (!localStorage.getItem('veritasai_help_seen')) {
-    setTimeout(() => openHelpModal(), 600);
-    // Pulse the help button so returning users know where it is
+    setTimeout(() => openHelpModal(), 700);
     if (btnOpenHelp) {
       btnOpenHelp.classList.add('pulse');
       btnOpenHelp.addEventListener('animationend', () => {

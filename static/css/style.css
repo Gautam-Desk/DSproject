@@ -1276,40 +1276,42 @@ body {
 }
 
 /* ──────────────────────────────────────────────
-   How To Use — Modal Dialog
+   How To Use — Modal Dialog (Fixed)
 ────────────────────────────────────────────── */
+/* Let the browser handle hiding; only style when [open] */
 .help-modal {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  width: min(780px, 95vw);
-  max-height: 88vh;
   border: none;
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.07);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.07);
   padding: 0;
+  width: min(780px, 95vw);
+  max-height: 88vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  animation: modalSlideIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .help-modal::backdrop {
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
+/* Only animate + show flex when dialog is open */
+.help-modal[open] {
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
 @keyframes modalSlideIn {
-  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  from { opacity: 0; transform: scale(0.93) translateY(18px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Modal inner wrapper */
+/* Modal inner wrapper — fills the dialog */
 .help-modal-inner {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  width: 100%;
   max-height: 88vh;
+  overflow: hidden;
 }
 
 /* Header */
