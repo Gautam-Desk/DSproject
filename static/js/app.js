@@ -113,6 +113,56 @@ document.addEventListener('DOMContentLoaded', () => {
   const uncertaintyBanner = document.getElementById('uncertainty-banner');
 
   // ==========================================
+  // Help Modal — "How to Use"
+  // ==========================================
+  const helpModal        = document.getElementById('help-modal');
+  const btnOpenHelp      = document.getElementById('btn-open-help');
+  const btnCloseHelp     = document.getElementById('btn-close-help');
+  const btnCloseHelpFtr  = document.getElementById('btn-close-help-footer');
+  const helpDontShow     = document.getElementById('help-dont-show-again');
+
+  function openHelpModal() {
+    if (helpModal) helpModal.showModal();
+  }
+
+  function closeHelpModal() {
+    if (!helpModal) return;
+    // Save preference if checkbox is ticked
+    if (helpDontShow && helpDontShow.checked) {
+      localStorage.setItem('veritasai_help_seen', '1');
+    }
+    helpModal.close();
+  }
+
+  if (btnOpenHelp)     btnOpenHelp.addEventListener('click', openHelpModal);
+  if (btnCloseHelp)    btnCloseHelp.addEventListener('click', closeHelpModal);
+  if (btnCloseHelpFtr) btnCloseHelpFtr.addEventListener('click', closeHelpModal);
+
+  // Close on backdrop click
+  if (helpModal) {
+    helpModal.addEventListener('click', (e) => {
+      if (e.target === helpModal) closeHelpModal();
+    });
+    // Close on Escape key (native dialog handles this, but ensure preference saved)
+    helpModal.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      closeHelpModal();
+    });
+  }
+
+  // Auto-show on first visit (unless user dismissed with "don't show again")
+  if (!localStorage.getItem('veritasai_help_seen')) {
+    setTimeout(() => openHelpModal(), 600);
+    // Pulse the help button so returning users know where it is
+    if (btnOpenHelp) {
+      btnOpenHelp.classList.add('pulse');
+      btnOpenHelp.addEventListener('animationend', () => {
+        btnOpenHelp.classList.remove('pulse');
+      }, { once: true });
+    }
+  }
+
+  // ==========================================
   // 2. Word Count, Char Counter & Clipboard Action
   // ==========================================
   function updateWordCount() {
